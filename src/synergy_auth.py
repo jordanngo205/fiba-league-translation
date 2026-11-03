@@ -44,10 +44,39 @@ def _margin(tok):
     return max(_MIN_MARGIN, min(_MAX_MARGIN, tok.get('expires_in', 3600) * 0.25))
 
 # Backstop on full logins only. Refreshes are not counted or delayed.
+#
+# These limits are enforced ON DISK, across processes, not in memory. An
+# in-process counter is near useless for this: every new run resets it to zero,
+# so ten runs grant themselves ten separate allowances while each one believes
+# it is being careful. Repeated logins are the only thing that locks a Synergy
+# account, and they almost never come from one long-lived process -- they come
+# from the same script being run again and again against a dead session.
 _MIN_SECONDS_BETWEEN_LOGINS = 90
-_MAX_LOGINS_PER_RUN = 2
-_login_count = 0
-_last_login = 0.0
+_MAX_LOGINS_PER_WINDOW = 3
+_LOGIN_WINDOW_SECONDS = 3600
+
+
+def _login_log():
+    return TOKEN_FILE.parent / 'login_history.json'
+
+
+def _recent_logins():
+    """Login timestamps inside the rolling window, oldest first."""
+    try:
+        hist = json.loads(_login_log().read_text())
+    except (OSError, ValueError):
+        return []
+    cutoff = time.time() - _LOGIN_WINDOW_SECONDS
+    return sorted(t for t in hist if isinstance(t, (int, float)) and t > cutoff)
+
+
+def _record_login():
+    hist = _recent_logins() + [time.time()]
+    try:
+        _login_log().parent.mkdir(parents=True, exist_ok=True)
+        _login_log().write_text(json.dumps(hist))
+    except OSError:
+        pass
 
 
 def load():
@@ -194,12 +223,18 @@ def _renew_locked(verbose):
 def login(verbose=True):
     """Full username/password login. Capped and spaced -- this is the call that
     gets the account locked if it is made too often."""
-    global _login_count, _last_login
-    if _login_count >= _MAX_LOGINS_PER_RUN:
-        sys.exit(f'stopping: {_MAX_LOGINS_PER_RUN} full logins already used this '
-                 'run and the refresh token is not working. Rerun '
-                 '`python3 do_auth.py` by hand rather than risking a lockout.')
-    wait = _MIN_SECONDS_BETWEEN_LOGINS - (time.time() - _last_login)
+    recent = _recent_logins()
+    if len(recent) >= _MAX_LOGINS_PER_WINDOW:
+        mins = (recent[0] + _LOGIN_WINDOW_SECONDS - time.time()) / 60
+        sys.exit(
+            f'refusing to log in: {len(recent)} logins already in the last '
+            f'{_LOGIN_WINDOW_SECONDS // 60} minutes. Synergy locks an account '
+            f'for repeated logins, and the lockout message is indistinguishable '
+            f'from a wrong password. Wait about {mins:.0f} min, or run '
+            f'`python3 src/do_auth.py` by hand once you know why the session '
+            f'died. Deleting {_login_log()} overrides this, at your own risk.')
+    wait = (_MIN_SECONDS_BETWEEN_LOGINS - (time.time() - recent[-1])
+            if recent else 0)
     if wait > 0:
         if verbose:
             print(f'   [waiting {wait:.0f}s before login]', flush=True)
@@ -207,13 +242,13 @@ def login(verbose=True):
     r = subprocess.run([sys.executable, str(DIR / 'do_auth.py')],
                        cwd=str(DIR), capture_output=True, text=True,
                        stdin=subprocess.DEVNULL)
-    _login_count += 1
-    _last_login = time.time()
+    _record_login()
     if 'Token saved' not in r.stdout:
         sys.exit('login failed -- stopping rather than retrying, so the account '
                  'is not locked out:\n' + (r.stdout + r.stderr)[-400:])
     if verbose:
-        print(f'   [logged in, {_login_count}/{_MAX_LOGINS_PER_RUN}]', flush=True)
+        print(f'   [logged in; {len(_recent_logins())}/'
+              f'{_MAX_LOGINS_PER_WINDOW} in the last hour]', flush=True)
     return load()
 
 
