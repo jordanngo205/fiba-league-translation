@@ -126,7 +126,12 @@ def shrink_groups(groups):
     return out
 
 
-def main():
+def load_pairs():
+    """Join FIBA records to club records on normalised name.
+
+    Returns [(league, fiba_totals, club_totals), ...]. Club seasons are summed
+    per player, so a two-season NCAA career is one club line.
+    """
     fiba = json.load(open(T / 'fiba_senior.json'))
     clubs = {}
     for lg in ('wnba', 'ncaa'):
@@ -152,12 +157,25 @@ def main():
 
     pairs = [(lg, f_idx[k], clubs[lg][k]) for k in f_idx
              for lg in clubs if k in clubs[lg]]
-    print(f'matched players: {len(pairs)}')
-    for lg in clubs:
-        print(f'   {lg}: {sum(1 for p in pairs if p[0] == lg)}')
+    return pairs, sorted(clubs)
 
-    print(f"\n{'statistic':13} {'league':6} {'n':>4} {'club':>7} {'FIBA':>7} "
-          f"{'raw gap':>8} {'shrunk':>8} {'own wt':>7}")
+
+def fit(pairs, leagues, min_club=MIN_CLUB_ATT, min_fiba=MIN_FIBA_ATT,
+        verbose=True):
+    """Fit every statistic at the given sample thresholds.
+
+    Separated from main so the thresholds can be swept without re-reading or
+    re-joining the data -- robustness.py relies on this.
+    """
+    clubs = {lg: None for lg in leagues}
+    if verbose:
+        print(f'matched players: {len(pairs)}')
+        for lg in clubs:
+            print(f'   {lg}: {sum(1 for p in pairs if p[0] == lg)}')
+
+    if verbose:
+        print(f"\n{'statistic':13} {'league':6} {'n':>4} {'club':>7} {'FIBA':>7} "
+              f"{'raw gap':>8} {'shrunk':>8} {'own wt':>7}")
     keep, raws, cells, players, ses = {}, {}, [], [], {}
     for label, made, att in SHOOTING:
         groups = defaultdict(list)
@@ -165,7 +183,7 @@ def main():
         subs = {}
         for lg in clubs:
             sub = [(f, c) for l, f, c in pairs if l == lg
-                   and c[att] >= MIN_CLUB_ATT and f[att] >= MIN_FIBA_ATT]
+                   and c[att] >= min_club and f[att] >= min_fiba]
             if len(sub) >= 3:
                 subs[lg] = sub
 
@@ -210,8 +228,9 @@ def main():
             se_shrunk = r[4] if len(r) > 4 else 0.0
             se_raw = r[5] if len(r) > 5 else 0.0
             ses[(label, lg)] = (se_shrunk, se_raw)
-            print(f'{label:13} {lg:6} {n:4} {100*cl:6.1f}% {100*fb:6.1f}% '
-                  f'{100*(fb-cl):+7.1f} {100*shrunk:+7.1f} {w:6.0%}')
+            if verbose:
+                print(f'{label:13} {lg:6} {n:4} {100*cl:6.1f}% {100*fb:6.1f}% '
+                      f'{100*(fb-cl):+7.1f} {100*shrunk:+7.1f} {w:6.0%}')
             keep[(label, lg)] = shrunk
             raws[(label, lg)] = fb - cl
             cells.append({'stat': label, 'league': lg, 'n': n,
@@ -233,15 +252,16 @@ def main():
     # DIFFERENCE between two leagues is: the shared offset cancels. That is
     # the number the roster decision needs anyway, since it asks how an NCAA
     # season compares with a WNBA season, not how either compares with FIBA.
+    offset, diffs = 0.0, []
     base = keep.get(('free throw', 'ncaa')), keep.get(('free throw', 'wnba'))
     if all(b is not None for b in base):
         offset = sum(base) / 2
-        diffs = []
-        print(f"\nFIBA environment offset, from the free-throw placebo: "
-              f"{100*offset:+.1f} pts")
-        print('Absolute gaps carry this offset; league differences do not.\n')
-        print(f"{'statistic':13} {'NCAA adj':>9} {'WNBA adj':>9} "
-              f"{'diff(shr)':>10} {'diff(raw)':>10}")
+        if verbose:
+            print(f"\nFIBA environment offset, from the free-throw placebo: "
+                  f"{100*offset:+.1f} pts")
+            print('Absolute gaps carry this offset; league differences do not.\n')
+            print(f"{'statistic':13} {'NCAA adj':>9} {'WNBA adj':>9} "
+                  f"{'diff(shr)':>10} {'diff(raw)':>10}")
         for label, _, _ in SHOOTING:
             a, b = keep.get((label, 'ncaa')), keep.get((label, 'wnba'))
             if a is None or b is None:
@@ -252,8 +272,9 @@ def main():
             # no longer an independent check. The raw difference still is.
             ra, rb = raws[(label, 'ncaa')], raws[(label, 'wnba')]
             tag = '   <- placebo, should be ~0' if label == 'free throw' else ''
-            print(f'{label:13} {100*(a-offset):+8.1f}  {100*(b-offset):+8.1f}  '
-                  f'{100*(a-b):+9.1f} {100*(ra-rb):+9.1f}{tag}')
+            if verbose:
+                print(f'{label:13} {100*(a-offset):+8.1f}  {100*(b-offset):+8.1f}  '
+                      f'{100*(a-b):+9.1f} {100*(ra-rb):+9.1f}{tag}')
             # The difference cancels the shared FIBA offset, so it needs no
             # adjustment and no assumption about the control. Its interval comes
             # from the two leagues' own standard errors.
@@ -267,20 +288,27 @@ def main():
                           'diff_ci_hi': (ra - rb) + 1.96 * se_d,
                           'is_control': label == 'free throw'})
 
+    return {'offset': offset, 'cells': cells, 'diffs': diffs,
+            'players': players,
+            'matched': {'total': len(pairs),
+                        'by_league': {lg: sum(1 for p in pairs if p[0] == lg)
+                                      for lg in leagues}},
+            'min_club_att': min_club, 'min_fiba_att': min_fiba}
+
+
+def main():
+    pairs, leagues = load_pairs()
+    res = fit(pairs, leagues)
+
     # Write results out so the dashboard is rendered from data rather than from
     # numbers retyped by hand. matched_pairs carries every player-level row that
     # backs a coefficient, because the club-to-FIBA join is on name rather than
     # id and needs to be auditable rather than trusted.
     T.mkdir(parents=True, exist_ok=True)
-    json.dump({'offset': offset if 'offset' in dir() else None,
-               'cells': cells, 'diffs': diffs,
-               'matched': {'total': len(pairs),
-                           'by_league': {lg: sum(1 for p in pairs if p[0] == lg)
-                                         for lg in clubs}},
-               'min_club_att': MIN_CLUB_ATT, 'min_fiba_att': MIN_FIBA_ATT},
-              open(T / 'coefficients.json', 'w'), indent=1)
+    players = res.pop('players')
+    json.dump(res, open(T / 'coefficients.json', 'w'), indent=1)
     json.dump(players, open(T / 'matched_pairs.json', 'w'), indent=1)
-    print(f'\nwrote coefficients.json ({len(cells)} cells) and '
+    print(f"\nwrote coefficients.json ({len(res['cells'])} cells) and "
           f'matched_pairs.json ({len(players)} player-stat rows)')
 
 

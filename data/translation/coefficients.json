@@ -130,8 +130,8 @@
  "matched": {
   "total": 260,
   "by_league": {
-   "wnba": 109,
-   "ncaa": 151
+   "ncaa": 151,
+   "wnba": 109
   }
  },
  "min_club_att": 40,
