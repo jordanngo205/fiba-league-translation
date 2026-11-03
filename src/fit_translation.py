@@ -30,11 +30,29 @@ from paths import DATA as T  # noqa: E402
 # (label, made, attempted). Free throws first: it is the check, not a result.
 SHOOTING = [('free throw', 'freeThrowsMade', 'freeThrowsAttempted'),
             ('two point',  'twoPtsMade',     'twoPtsAttempted'),
-            ('three point','threePtsMade',   'threePtsAttempted'),
-            ('field goal', 'fieldGoalsMade', 'fieldGoalsAttempted')]
+            ('three point','threePtsMade',   'threePtsAttempted')]
+
+# Field goals are deliberately absent. On the club leaderboard endpoint the
+# fgMade/fgAttempt fields are not field goals in the standard sense: for
+# A'ja Wilson's 2025 season they read 950/1940 against a true 2PM+3PM of
+# 459/931, roughly double. The giveaway is the points identity, which closes
+# exactly on the explicit shot fields and not at all on the fg ones:
+#     2*427 + 3*32 + 334 = 1284 = reported points
+# while 950 made field goals plus 334 free throws could not produce 1284 points
+# under any arithmetic. The FIBA boxscore endpoint's fg fields ARE standard --
+# all 1,680 rows satisfy the identity -- so this is an endpoint difference, not
+# a league one, and it only ever corrupted the club side.
+#
+# Two- and three-pointers are unaffected: both sides use the explicit, verified
+# shot2/shot3 fields, and field goals added nothing those two did not already
+# decompose.
 
 MIN_CLUB_ATT = 40      # club sample needed before a player's gap means anything
 MIN_FIBA_ATT = 8
+
+
+def ca_club(c, att):
+    return c[att]
 
 
 def norm(n):
@@ -120,7 +138,7 @@ def main():
 
     print(f"\n{'statistic':13} {'league':6} {'n':>4} {'club':>7} {'FIBA':>7} "
           f"{'raw gap':>8} {'shrunk':>8} {'own wt':>7}")
-    keep, raws = {}, {}
+    keep, raws, cells, players = {}, {}, [], []
     for label, made, att in SHOOTING:
         groups = defaultdict(list)
         cell = {}
@@ -148,6 +166,12 @@ def main():
                 cr, ca = f[made] / f[att], f[att]
                 kr, ka = c[made] / c[att], c[att]
                 gap = cr - kr
+                players.append({'stat': label, 'league': lg,
+                                'name': c['_name'], 'fiba_name': f['_name'],
+                                'team': c['_team'], 'nation': f['_nation'],
+                                'club_made': c[made], 'club_att': ca_club(c, att),
+                                'club_rate': kr, 'fiba_made': f[made],
+                                'fiba_att': ca, 'fiba_rate': cr, 'gap': gap})
                 # variance of a difference of two proportions, evaluated at the
                 # common rate so the weight is a function of attempts alone
                 var = pq * (1 / ca + 1 / ka)
@@ -167,6 +191,9 @@ def main():
                   f'{100*(fb-cl):+7.1f} {100*shrunk:+7.1f} {w:6.0%}')
             keep[(label, lg)] = shrunk
             raws[(label, lg)] = fb - cl
+            cells.append({'stat': label, 'league': lg, 'n': n,
+                          'club': cl, 'fiba': fb, 'raw_gap': fb - cl,
+                          'shrunk': shrunk, 'own_weight': w})
 
     # ---- what the placebo forces us to do -------------------------------
     #
@@ -182,6 +209,7 @@ def main():
     base = keep.get(('free throw', 'ncaa')), keep.get(('free throw', 'wnba'))
     if all(b is not None for b in base):
         offset = sum(base) / 2
+        diffs = []
         print(f"\nFIBA environment offset, from the free-throw placebo: "
               f"{100*offset:+.1f} pts")
         print('Absolute gaps carry this offset; league differences do not.\n')
@@ -199,6 +227,26 @@ def main():
             tag = '   <- placebo, should be ~0' if label == 'free throw' else ''
             print(f'{label:13} {100*(a-offset):+8.1f}  {100*(b-offset):+8.1f}  '
                   f'{100*(a-b):+9.1f} {100*(ra-rb):+9.1f}{tag}')
+            diffs.append({'stat': label,
+                          'ncaa_adj': a - offset, 'wnba_adj': b - offset,
+                          'diff_shrunk': a - b, 'diff_raw': ra - rb,
+                          'is_control': label == 'free throw'})
+
+    # Write results out so the dashboard is rendered from data rather than from
+    # numbers retyped by hand. matched_pairs carries every player-level row that
+    # backs a coefficient, because the club-to-FIBA join is on name rather than
+    # id and needs to be auditable rather than trusted.
+    T.mkdir(parents=True, exist_ok=True)
+    json.dump({'offset': offset if 'offset' in dir() else None,
+               'cells': cells, 'diffs': diffs,
+               'matched': {'total': len(pairs),
+                           'by_league': {lg: sum(1 for p in pairs if p[0] == lg)
+                                         for lg in clubs}},
+               'min_club_att': MIN_CLUB_ATT, 'min_fiba_att': MIN_FIBA_ATT},
+              open(T / 'coefficients.json', 'w'), indent=1)
+    json.dump(players, open(T / 'matched_pairs.json', 'w'), indent=1)
+    print(f'\nwrote coefficients.json ({len(cells)} cells) and '
+          f'matched_pairs.json ({len(players)} player-stat rows)')
 
 
 if __name__ == '__main__':
