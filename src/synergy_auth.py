@@ -220,19 +220,42 @@ def _renew_locked(verbose):
     return out
 
 
-def login(verbose=True):
-    """Full username/password login. Capped and spaced -- this is the call that
-    gets the account locked if it is made too often."""
+def check_login_allowed():
+    """Raise if another login would risk a lockout.
+
+    Called by BOTH login paths. The automatic fallback is not the dangerous one
+    -- it is capped and it only fires once per run. The dangerous path is a
+    human or an agent running do_auth.py by hand, repeatedly, against a session
+    that keeps dying, which is exactly what the scrapers tell you to do when
+    they stop. That path bypassed this guard entirely until do_auth started
+    calling it.
+    """
     recent = _recent_logins()
     if len(recent) >= _MAX_LOGINS_PER_WINDOW:
         mins = (recent[0] + _LOGIN_WINDOW_SECONDS - time.time()) / 60
-        sys.exit(
+        raise LoginRateLimited(
             f'refusing to log in: {len(recent)} logins already in the last '
             f'{_LOGIN_WINDOW_SECONDS // 60} minutes. Synergy locks an account '
-            f'for repeated logins, and the lockout message is indistinguishable '
-            f'from a wrong password. Wait about {mins:.0f} min, or run '
-            f'`python3 src/do_auth.py` by hand once you know why the session '
-            f'died. Deleting {_login_log()} overrides this, at your own risk.')
+            f'for repeated logins, and the lockout message is identical to a '
+            f'wrong password, so retrying teaches you nothing and extends the '
+            f'lock. Wait about {mins:.0f} min.\n'
+            f'If the session keeps dying, the cause is almost never the '
+            f'password -- check whether another project shares this token '
+            f'file.\nOverride at your own risk: rm {_login_log()}')
+    return recent
+
+
+class LoginRateLimited(RuntimeError):
+    """Another login would risk locking the account."""
+
+
+def login(verbose=True):
+    """Full username/password login. Capped and spaced -- this is the call that
+    gets the account locked if it is made too often."""
+    try:
+        recent = check_login_allowed()
+    except LoginRateLimited as e:
+        sys.exit(str(e))
     wait = (_MIN_SECONDS_BETWEEN_LOGINS - (time.time() - recent[-1])
             if recent else 0)
     if wait > 0:
@@ -242,7 +265,7 @@ def login(verbose=True):
     r = subprocess.run([sys.executable, str(DIR / 'do_auth.py')],
                        cwd=str(DIR), capture_output=True, text=True,
                        stdin=subprocess.DEVNULL)
-    _record_login()
+    # do_auth.py records the login itself, so it is counted once, not twice.
     if 'Token saved' not in r.stdout:
         sys.exit('login failed -- stopping rather than retrying, so the account '
                  'is not locked out:\n' + (r.stdout + r.stderr)[-400:])
