@@ -283,6 +283,9 @@ def main():
     by_lg = co['matched']['by_league']
     built = co.get('fitted_on') or 'unknown'
     ref_label = L.label(ref)
+    league_opts = ''.join(
+        f'<option value="{k}">{esc(L.label(k))} only</option>'
+        for k in keys)
     _ls = [L.label(k) for k in keys]
     league_list = (' and '.join(_ls) if len(_ls) < 3
                    else ', '.join(_ls[:-1]) + ' and ' + _ls[-1])
@@ -572,9 +575,8 @@ a {{ color:var(--s-ncaa) }}
   <div class="controls">
     <input type="search" id="q" placeholder="filter by name&hellip;" aria-label="Filter by name">
     <select id="lgf" aria-label="Filter by league">
-      <option value="">both leagues</option>
-      <option value="ncaa">NCAA only</option>
-      <option value="wnba">WNBA only</option>
+      <option value="">all leagues</option>
+      {league_opts}
     </select>
     <span class="note" id="cnt" style="margin:0"></span>
   </div>
