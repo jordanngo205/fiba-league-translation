@@ -9,6 +9,7 @@
 data/translation/*.json
 !data/translation/coefficients.json
 !data/translation/matched_pairs.json
+!data/translation/robustness.json
 
 # Python
 __pycache__/

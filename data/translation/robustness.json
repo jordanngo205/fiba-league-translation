@@ -1,0 +1,311 @@
+{
+ "thresholds": [
+  {
+   "min_club": 40,
+   "min_fiba": 8,
+   "stats": {
+    "free throw": {
+     "diff": -0.0008667794679991792,
+     "lo": -0.04434031144768386,
+     "hi": 0.042606752511685504,
+     "min_n": 43
+    },
+    "two point": {
+     "diff": -0.08374496809631837,
+     "lo": -0.11464798295330439,
+     "hi": -0.052841953239332363,
+     "min_n": 63
+    },
+    "three point": {
+     "diff": -0.03624235700523559,
+     "lo": -0.0748595419909535,
+     "hi": 0.0023748279804823164,
+     "min_n": 51
+    }
+   }
+  },
+  {
+   "min_club": 40,
+   "min_fiba": 15,
+   "stats": {
+    "free throw": {
+     "diff": -0.016899846490373127,
+     "lo": -0.06897525164764307,
+     "hi": 0.035175558666896804,
+     "min_n": 23
+    },
+    "two point": {
+     "diff": -0.07634143558603596,
+     "lo": -0.10845377523221383,
+     "hi": -0.04422909593985807,
+     "min_n": 55
+    },
+    "three point": {
+     "diff": -0.033413945010977886,
+     "lo": -0.07604806031711209,
+     "hi": 0.009220170295156309,
+     "min_n": 37
+    }
+   }
+  },
+  {
+   "min_club": 40,
+   "min_fiba": 25,
+   "stats": {
+    "free throw": {
+     "diff": 0.02653686811610645,
+     "lo": -0.041387192086732166,
+     "hi": 0.09446092831894506,
+     "min_n": 9
+    },
+    "two point": {
+     "diff": -0.07063357442302143,
+     "lo": -0.1054831872535964,
+     "hi": -0.03578396159244645,
+     "min_n": 41
+    },
+    "three point": {
+     "diff": -0.028056039465525595,
+     "lo": -0.08169815913288614,
+     "hi": 0.02558608020183495,
+     "min_n": 15
+    }
+   }
+  },
+  {
+   "min_club": 40,
+   "min_fiba": 40,
+   "stats": {}
+  },
+  {
+   "min_club": 100,
+   "min_fiba": 15,
+   "stats": {
+    "free throw": {
+     "diff": -0.029630331831842716,
+     "lo": -0.09044428374193957,
+     "hi": 0.031183620078254135,
+     "min_n": 14
+    },
+    "two point": {
+     "diff": -0.07014764742105711,
+     "lo": -0.1041874313699884,
+     "hi": -0.036107863472125835,
+     "min_n": 44
+    },
+    "three point": {
+     "diff": -0.039491353117054206,
+     "lo": -0.0864485738177097,
+     "hi": 0.0074658675836013,
+     "min_n": 28
+    }
+   }
+  },
+  {
+   "min_club": 200,
+   "min_fiba": 15,
+   "stats": {
+    "free throw": {
+     "diff": 0.06532539511287572,
+     "lo": -0.01852141132395302,
+     "hi": 0.14917220154970445,
+     "min_n": 8
+    },
+    "two point": {
+     "diff": -0.09946700327845143,
+     "lo": -0.13911415910330785,
+     "hi": -0.05981984745359501,
+     "min_n": 34
+    },
+    "three point": {
+     "diff": -0.018535443424385845,
+     "lo": -0.07669888711373354,
+     "hi": 0.03962800026496186,
+     "min_n": 17
+    }
+   }
+  },
+  {
+   "min_club": 200,
+   "min_fiba": 25,
+   "stats": {
+    "free throw": {
+     "diff": 0.1635522007098762,
+     "lo": 0.049793432258486675,
+     "hi": 0.27731096916126574,
+     "min_n": 3
+    },
+    "two point": {
+     "diff": -0.09214685078809554,
+     "lo": -0.13488772727255577,
+     "hi": -0.0494059743036353,
+     "min_n": 26
+    },
+    "three point": {
+     "diff": -0.015758316429629493,
+     "lo": -0.08425040918855219,
+     "hi": 0.0527337763292932,
+     "min_n": 8
+    }
+   }
+  }
+ ],
+ "influence": {
+  "stat": "two point",
+  "base": -0.08374496809631837,
+  "max_abs_swing": 0.005063275105305298,
+  "max_swing_player": "Kiyomi McMiller",
+  "max_swing_league": "ncaa",
+  "n_refits": 260,
+  "top": [
+   {
+    "delta": -0.005063275105305298,
+    "name": "Kiyomi McMiller",
+    "league": "ncaa"
+   },
+   {
+    "delta": 0.005014499959770269,
+    "name": "Audi Crooks",
+    "league": "ncaa"
+   },
+   {
+    "delta": -0.004246414338450077,
+    "name": "Gabriela Jaquez",
+    "league": "wnba"
+   },
+   {
+    "delta": -0.0040318641895879526,
+    "name": "Maria Gakdeng",
+    "league": "ncaa"
+   },
+   {
+    "delta": 0.004027687276370928,
+    "name": "Janelle Sala\u00fcn",
+    "league": "wnba"
+   },
+   {
+    "delta": 0.003915746209012638,
+    "name": "Raegan Beers",
+    "league": "ncaa"
+   },
+   {
+    "delta": 0.003823531714987838,
+    "name": "Gabriela Jaquez",
+    "league": "ncaa"
+   },
+   {
+    "delta": 0.003617645746338438,
+    "name": "Shayeann Day-Wilson",
+    "league": "ncaa"
+   },
+   {
+    "delta": -0.0034885858643932677,
+    "name": "Sevgi Uzun",
+    "league": "wnba"
+   },
+   {
+    "delta": 0.0029690519165468388,
+    "name": "Teaira McCowan",
+    "league": "wnba"
+   }
+  ]
+ },
+ "influence_3pt": {
+  "stat": "three point",
+  "base": -0.03624235700523559,
+  "max_abs_swing": 0.006741736501423734,
+  "max_swing_player": "Leonie Fiebich",
+  "max_swing_league": "wnba",
+  "n_refits": 260,
+  "top": [
+   {
+    "delta": -0.006741736501423734,
+    "name": "Leonie Fiebich",
+    "league": "wnba"
+   },
+   {
+    "delta": -0.004907170922563042,
+    "name": "Syla Swords",
+    "league": "ncaa"
+   },
+   {
+    "delta": -0.004322323081032864,
+    "name": "Cecilia Zandalasini",
+    "league": "wnba"
+   },
+   {
+    "delta": 0.004081398534492464,
+    "name": "Rhyne Howard",
+    "league": "wnba"
+   },
+   {
+    "delta": 0.003984221974065227,
+    "name": "Gabby Williams",
+    "league": "wnba"
+   },
+   {
+    "delta": 0.0036587073691878857,
+    "name": "Mai Yamamoto",
+    "league": "wnba"
+   },
+   {
+    "delta": 0.003435238757294956,
+    "name": "Avery Howell",
+    "league": "ncaa"
+   },
+   {
+    "delta": -0.00341547346127985,
+    "name": "Kennedy Burke",
+    "league": "wnba"
+   },
+   {
+    "delta": -0.003124865920586861,
+    "name": "Malvina Haziri",
+    "league": "ncaa"
+   },
+   {
+    "delta": -0.003066663956737159,
+    "name": "Bridget Carleton",
+    "league": "wnba"
+   }
+  ]
+ },
+ "offset_by_competition": [
+  {
+   "competition": "FIBA World Cup Qualifying Tournaments ( W )",
+   "n": 31,
+   "gap": 0.0023212784767933092,
+   "fiba_att": 507.0
+  },
+  {
+   "competition": "FIBA World Championships ( W )",
+   "n": 23,
+   "gap": -0.044982149043286346,
+   "fiba_att": 311.0
+  },
+  {
+   "competition": "FIBA AmeriCup ( W )",
+   "n": 10,
+   "gap": -0.018946256038647302,
+   "fiba_att": 138.0
+  },
+  {
+   "competition": "FIBA Eurobasket Qualifications ( W )",
+   "n": 9,
+   "gap": 0.030653033745687064,
+   "fiba_att": 102.0
+  },
+  {
+   "competition": "Olympic Pre-Qualifying Tournament ( W )",
+   "n": 9,
+   "gap": -0.05895691609977327,
+   "fiba_att": 147.0
+  },
+  {
+   "competition": "Fiba Centrobasket Qualifiers W",
+   "n": 5,
+   "gap": 0.023425499231950808,
+   "fiba_att": 84.0
+  }
+ ]
+}
