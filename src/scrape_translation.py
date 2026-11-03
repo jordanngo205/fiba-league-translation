@@ -104,22 +104,42 @@ def fetch_club_season(s, H, league_id, season_id):
     five-game windows. The leaderboards endpoint returns real season aggregates
     (gp, shot2/shot3/ft splits, possessions) and needs competitionType and
     rankingType set to 4; leaving them unset returns a 400.
+
+    Paged, because the endpoint silently caps a response at `take`. An earlier
+    single call with take=4096 returned exactly 4096 NCAA records for each
+    season -- the limit, not the league. Division I women's basketball has
+    appreciably more players than that, and because the ranking is descending
+    the missing ones were the low-usage tail. A short page size that is paged to
+    exhaustion is safer than a large one that might silently clip again.
     """
-    r = s.get(f'{BASE}/leaderboards/recordswithsparseranks', headers=H, timeout=120,
-              params={'leagueId': league_id, 'seasonId': season_id,
-                      # playType 0 is total offence; 110 and the others are
-                      # subsets, which is why Caitlin Clark came back with 115
-                      # possessions for a whole WNBA season.
-                      'playType': 0, 'reportType': 0,
-                      'competitionDefinitionKey': f'{league_id}:ALL',
-                      'competitionType': 4, 'rankingType': 4,
-                      'perGame': 'false', 'minPossessions': 0,
-                      'minPossessionsPerGame': 'false', 'ascending': 'false',
-                      'skip': 0, 'take': 4096})
-    if r.status_code != 200:
-        print(f'   leaderboard failed: {r.status_code} {r.text[:120]}')
-        return []
-    return r.json().get('result', [])
+    PAGE = 2000
+    out, skip = [], 0
+    while True:
+        # Renew in place: a full club scrape can outlive a ~10min token.
+        H.update(headers())
+        r = s.get(f'{BASE}/leaderboards/recordswithsparseranks', headers=H, timeout=120,
+                  params={'leagueId': league_id, 'seasonId': season_id,
+                          # playType 0 is total offence; 110 and the others are
+                          # subsets, which is why Caitlin Clark came back with
+                          # 115 possessions for a whole WNBA season.
+                          'playType': 0, 'reportType': 0,
+                          'competitionDefinitionKey': f'{league_id}:ALL',
+                          'competitionType': 4, 'rankingType': 4,
+                          'perGame': 'false', 'minPossessions': 0,
+                          'minPossessionsPerGame': 'false', 'ascending': 'false',
+                          'skip': skip, 'take': PAGE})
+        if r.status_code == 401:
+            H.update(refresh_token())
+            continue
+        if r.status_code != 200:
+            print(f'   leaderboard failed: {r.status_code} {r.text[:120]}')
+            return out
+        batch = r.json().get('result', [])
+        out += batch
+        print(f'   page skip={skip}: {len(batch)} records (total {len(out)})', flush=True)
+        if len(batch) < PAGE:
+            return out
+        skip += PAGE
 
 
 def fetch_players(s, H, league_id, season_id, team_id, opponents=None):
