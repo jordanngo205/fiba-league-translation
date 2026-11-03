@@ -118,9 +118,28 @@ def renew(verbose=True):
     except ValueError:
         data = {}
     if r.status_code != 200 or 'access_token' not in data:
+        # A dead refresh token must be discarded, not kept and presented again.
+        # Servers treat a reused refresh token as a stolen one and revoke the
+        # whole token family; retrying it cannot succeed and can only make
+        # things worse. Clearing it here means the next renewal goes straight
+        # to a login instead of burning a second rejection first.
+        #
+        # The usual cause is two processes sharing one token file: rotation
+        # means whichever refreshes first invalidates the other's copy. One
+        # file used by one process at a time is the only safe arrangement.
+        if data.get('error') == 'invalid_grant' or r.status_code == 400:
+            tok.pop('refresh_token', None)
+            try:
+                save(tok)
+            except (OSError, KeyError):
+                pass
+            if verbose:
+                print('   [refresh token is spent or revoked; discarded so it '
+                      'is not presented twice]', flush=True)
+        elif verbose:
+            print(f'   [refresh rejected ({r.status_code})]', flush=True)
         if verbose:
-            print(f'   [refresh rejected ({r.status_code}), falling back to login]',
-                  flush=True)
+            print('   [falling back to a full login]', flush=True)
         return None
     out = save(data, keep_refresh_from=tok)
     if verbose:
