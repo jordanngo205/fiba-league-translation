@@ -27,6 +27,7 @@ from pathlib import Path
 DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(DIR))
 from paths import DATA as T  # noqa: E402
+import leagues as L  # noqa: E402
 
 # (label, made, attempted). Free throws first: it is the check, not a result.
 SHOOTING = [('free throw', 'freeThrowsMade', 'freeThrowsAttempted'),
@@ -150,9 +151,12 @@ def load_pairs():
     """
     fiba = json.load(open(T / 'fiba_senior.json'))
     clubs = {}
-    for lg in ('wnba', 'ncaa'):
+    for lg in L.LEAGUES:
+        path = T / f'{lg}_players.json'
+        if not path.exists():
+            continue        # league configured but not yet scraped
         idx = defaultdict(lambda: defaultdict(float))
-        for v in json.load(open(T / f'{lg}_players.json')).values():
+        for v in json.load(open(path)).values():
             k = norm(v['name'])
             for f, val in v.items():
                 if isinstance(val, (int, float)):
@@ -173,7 +177,7 @@ def load_pairs():
 
     pairs = [(lg, f_idx[k], clubs[lg][k]) for k in f_idx
              for lg in clubs if k in clubs[lg]]
-    return pairs, sorted(clubs)
+    return pairs, L.ordered(clubs)
 
 
 def fit(pairs, leagues, min_club=MIN_CLUB_ATT, min_fiba=MIN_FIBA_ATT,
@@ -269,42 +273,60 @@ def fit(pairs, leagues, min_club=MIN_CLUB_ATT, min_fiba=MIN_FIBA_ATT,
     # the number the roster decision needs anyway, since it asks how an NCAA
     # season compares with a WNBA season, not how either compares with FIBA.
     offset, diffs = 0.0, []
-    base = keep.get(('free throw', 'ncaa')), keep.get(('free throw', 'wnba'))
-    if all(b is not None for b in base):
-        offset = sum(base) / 2
+
+    # The control, averaged across every league present. With two leagues an
+    # agreement could be coincidence; with three independent leagues agreeing it
+    # is real evidence of a common environment offset -- and a league that
+    # disagrees is evidence against the whole common-offset story, which makes
+    # this a sharper test than it was with a pair.
+    ctl = [keep[(L.CONTROL, lg)] for lg in leagues if (L.CONTROL, lg) in keep]
+    if ctl:
+        offset = sum(ctl) / len(ctl)
         if verbose:
-            print(f"\nFIBA environment offset, from the free-throw placebo: "
-                  f"{100*offset:+.1f} pts")
+            print(f"\nFIBA environment offset, from the {L.CONTROL} control "
+                  f"across {len(ctl)} leagues: {100*offset:+.1f} pts")
             print('Absolute gaps carry this offset; league differences do not.\n')
-            print(f"{'statistic':13} {'NCAA adj':>9} {'WNBA adj':>9} "
-                  f"{'diff(shr)':>10} {'diff(raw)':>10}")
-        for label, _, _ in SHOOTING:
-            a, b = keep.get((label, 'ncaa')), keep.get((label, 'wnba'))
-            if a is None or b is None:
-                continue
-            # Report the RAW league difference as well. Where shrinkage put 0%
-            # weight on a league's own data both leagues collapse to the same
-            # pooled value, so the shrunk difference is forced to zero and is
-            # no longer an independent check. The raw difference still is.
-            ra, rb = raws[(label, 'ncaa')], raws[(label, 'wnba')]
-            tag = '   <- placebo, should be ~0' if label == 'free throw' else ''
-            if verbose:
-                print(f'{label:13} {100*(a-offset):+8.1f}  {100*(b-offset):+8.1f}  '
-                      f'{100*(a-b):+9.1f} {100*(ra-rb):+9.1f}{tag}')
-            # The difference cancels the shared FIBA offset, so it needs no
-            # adjustment and no assumption about the control. Its interval comes
-            # from the two leagues' own standard errors.
-            sa, sb = ses[(label, 'ncaa')][1], ses[(label, 'wnba')][1]
-            se_d = math.sqrt(sa * sa + sb * sb)
-            diffs.append({'stat': label,
-                          'ncaa_adj': a - offset, 'wnba_adj': b - offset,
-                          'diff_shrunk': a - b, 'diff_raw': ra - rb,
-                          'se_diff': se_d,
-                          'diff_ci_lo': (ra - rb) - 1.96 * se_d,
-                          'diff_ci_hi': (ra - rb) + 1.96 * se_d,
-                          'is_control': label == 'free throw'})
+
+    # Every pairwise difference, plus the reference-league view. A difference
+    # cancels whatever the offset is, so it needs no adjustment and makes no
+    # assumption about the control.
+    if verbose and len(leagues) > 1:
+        print(f"{'statistic':13} {'pair':24} {'diff(raw)':>10} {'95% CI':>18}")
+    for label, _, _ in SHOOTING:
+        for i, a in enumerate(leagues):
+            for b in leagues[i + 1:]:
+                if (label, a) not in raws or (label, b) not in raws:
+                    continue
+                d = raws[(label, a)] - raws[(label, b)]
+                sa, sb = ses[(label, a)][1], ses[(label, b)][1]
+                se_d = math.sqrt(sa * sa + sb * sb)
+                lo, hi = d - 1.96 * se_d, d + 1.96 * se_d
+                diffs.append({
+                    'stat': label, 'a': a, 'b': b,
+                    'pair': f'{L.label(a)} - {L.label(b)}',
+                    'diff_raw': d,
+                    'diff_shrunk': keep[(label, a)] - keep[(label, b)],
+                    'se_diff': se_d, 'diff_ci_lo': lo, 'diff_ci_hi': hi,
+                    'crosses_zero': lo <= 0 <= hi,
+                    'vs_reference': L.REFERENCE in (a, b),
+                    'is_control': label == L.CONTROL})
+                if verbose:
+                    tag = '  <- control' if label == L.CONTROL else ''
+                    print(f'{label:13} {L.label(a)[:11]:12}- '
+                          f'{L.label(b)[:11]:11} {100*d:+9.1f} '
+                          f'[{100*lo:+6.1f},{100*hi:+6.1f}]{tag}')
+
+    # per-league adjusted values, for the leagues themselves rather than pairs
+    adjusted = [{'stat': label, 'league': lg,
+                 'adj': keep[(label, lg)] - offset,
+                 'shrunk': keep[(label, lg)], 'raw': raws[(label, lg)]}
+                for label, _, _ in SHOOTING for lg in leagues
+                if (label, lg) in keep]
 
     return {'fitted_on': date.today().isoformat(),
+            'leagues': [{'key': k, 'label': L.label(k)} for k in leagues],
+            'reference': L.REFERENCE, 'control': L.CONTROL,
+            'adjusted': adjusted,
             'competitions': competition_counts(),
             'offset': offset, 'cells': cells, 'diffs': diffs,
             'players': players,

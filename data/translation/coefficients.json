@@ -1,5 +1,61 @@
 {
  "fitted_on": "2026-11-02",
+ "leagues": [
+  {
+   "key": "ncaa",
+   "label": "NCAA"
+  },
+  {
+   "key": "wnba",
+   "label": "WNBA"
+  }
+ ],
+ "reference": "wnba",
+ "control": "free throw",
+ "adjusted": [
+  {
+   "stat": "free throw",
+   "league": "ncaa",
+   "adj": 0.0,
+   "shrunk": -0.0239545723634776,
+   "raw": -0.03289047888221619
+  },
+  {
+   "stat": "free throw",
+   "league": "wnba",
+   "adj": 0.0,
+   "shrunk": -0.0239545723634776,
+   "raw": -0.03202369941421701
+  },
+  {
+   "stat": "two point",
+   "league": "ncaa",
+   "adj": -0.02374461388775823,
+   "shrunk": -0.04769918625123583,
+   "raw": -0.06574322094544016
+  },
+  {
+   "stat": "two point",
+   "league": "wnba",
+   "adj": 0.04771497297427009,
+   "shrunk": 0.023760400610792487,
+   "raw": 0.01800174715087821
+  },
+  {
+   "stat": "three point",
+   "league": "ncaa",
+   "adj": 0.012588911058665029,
+   "shrunk": -0.01136566130481257,
+   "raw": -0.016092052997392248
+  },
+  {
+   "stat": "three point",
+   "league": "wnba",
+   "adj": 0.04595642476894418,
+   "shrunk": 0.02200185240546658,
+   "raw": 0.020150304007843345
+  }
+ ],
  "competitions": [
   {
    "competition": "FIBA Eurobasket Qualifications ( W )",
@@ -150,35 +206,44 @@
  "diffs": [
   {
    "stat": "free throw",
-   "ncaa_adj": 0.0,
-   "wnba_adj": 0.0,
-   "diff_shrunk": 0.0,
+   "a": "ncaa",
+   "b": "wnba",
+   "pair": "NCAA - WNBA",
    "diff_raw": -0.0008667794679991792,
+   "diff_shrunk": 0.0,
    "se_diff": 0.0221803734590228,
    "diff_ci_lo": -0.04434031144768386,
    "diff_ci_hi": 0.042606752511685504,
+   "crosses_zero": true,
+   "vs_reference": true,
    "is_control": true
   },
   {
    "stat": "two point",
-   "ncaa_adj": -0.02374461388775823,
-   "wnba_adj": 0.04771497297427009,
-   "diff_shrunk": -0.07145958686202832,
+   "a": "ncaa",
+   "b": "wnba",
+   "pair": "NCAA - WNBA",
    "diff_raw": -0.08374496809631837,
+   "diff_shrunk": -0.07145958686202832,
    "se_diff": 0.01576684431478878,
    "diff_ci_lo": -0.11464798295330439,
    "diff_ci_hi": -0.052841953239332363,
+   "crosses_zero": false,
+   "vs_reference": true,
    "is_control": false
   },
   {
    "stat": "three point",
-   "ncaa_adj": 0.012588911058665029,
-   "wnba_adj": 0.04595642476894418,
-   "diff_shrunk": -0.03336751371027915,
+   "a": "ncaa",
+   "b": "wnba",
+   "pair": "NCAA - WNBA",
    "diff_raw": -0.03624235700523559,
+   "diff_shrunk": -0.03336751371027915,
    "se_diff": 0.019702645400876486,
    "diff_ci_lo": -0.0748595419909535,
    "diff_ci_hi": 0.0023748279804823164,
+   "crosses_zero": true,
+   "vs_reference": true,
    "is_control": false
   }
  ],

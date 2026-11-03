@@ -16,13 +16,9 @@ from pathlib import Path
 DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(DIR))
 from paths import DATA, DOCS  # noqa: E402
+import leagues as L  # noqa: E402
 
-# Categorical slots 1 and 2 from the validated palette, light and dark steps.
-# Two series clear every check in both modes on the all-pairs list.
-LEAGUE = {
-    'ncaa': {'label': 'NCAA', 'light': '#2a78d6', 'dark': '#3987e5'},
-    'wnba': {'label': 'WNBA', 'light': '#eb6834', 'dark': '#d95926'},
-}
+LEAGUE = L.LEAGUES
 ORDER = ['free throw', 'two point', 'three point']
 
 
@@ -144,7 +140,7 @@ def scatter(pts, size=430, pad=52):
     for p in pts:
         col = f"var(--s-{p['league']})"
         r = 4 + min(5.0, (p['fiba_att'] / 26.0) ** 0.5 * 2.6)
-        tip = (f"{p['name']} ({LEAGUE[p['league']]['label']}, {p['nation']}) — "
+        tip = (f"{p['name']} ({L.label(p['league'])}, {p['nation']}) — "
                f"club {p['club_made']:.0f}/{p['club_att']:.0f} "
                f"= {100 * p['club_rate']:.0f}%, FIBA {p['fiba_made']:.0f}/"
                f"{p['fiba_att']:.0f} = {100 * p['fiba_rate']:.0f}%")
@@ -159,11 +155,10 @@ def scatter(pts, size=430, pad=52):
     return '\n'.join(o)
 
 
-def legend():
+def legend(keys):
     items = ''.join(
         f'<span class="lg-item"><span class="sw" style="background:'
-        f'var(--s-{k})"></span>{v["label"]}</span>'
-        for k, v in LEAGUE.items())
+        f'var(--s-{k})"></span>{esc(L.label(k))}</span>' for k in keys)
     return f'<div class="legend">{items}</div>'
 
 
@@ -173,26 +168,40 @@ def main():
     rb_path = DATA / 'robustness.json'
     rb = json.load(open(rb_path)) if rb_path.exists() else {}
     cells = {(c['stat'], c['league']): c for c in co['cells']}
-    diffs = {d['stat']: d for d in co['diffs']}
+    keys = [l['key'] for l in co.get('leagues', [])] or ['ncaa', 'wnba']
+    ref = co.get('reference', 'wnba')
+    ctl_name = co.get('control', 'free throw')
+    adj = {(a['stat'], a['league']): a for a in co.get('adjusted', [])}
+    diffs = co['diffs']
+    # differences quoted against the reference league, which is the comparison
+    # a selector is actually making
+    ref_diffs = [d for d in diffs if d.get('vs_reference')]
+
+    css_light = ' '.join(f"--s-{k}:{LEAGUE[k]['light']};" for k in keys)
+    css_dark = ' '.join(f"--s-{k}:{LEAGUE[k]['dark']};" for k in keys)
 
     comps = co.get('competitions', [])
 
     # ---- headline tiles ---------------------------------------------------
+    def signed(d):
+        """Orient a difference as 'other league minus reference'."""
+        if d['b'] == ref:
+            return d['diff_raw'], d['diff_ci_lo'], d['diff_ci_hi'], d['a']
+        return (-d['diff_raw'], -d['diff_ci_hi'], -d['diff_ci_lo'], d['b'])
+
     tiles = []
     for stat in ORDER:
-        d = diffs.get(stat)
-        if not d:
-            continue
-        v, lo, hi = d['diff_raw'], d['diff_ci_lo'], d['diff_ci_hi']
-        crosses = lo <= 0 <= hi
-        if d['is_control']:
-            verdict, cls = 'control — passes', 'ctl'
-        elif crosses:
-            verdict, cls = 'not distinguishable from zero', 'ns'
-        else:
-            verdict, cls = 'excludes zero', 'sig'
-        tiles.append(f'''<div class="tile {cls}">
-      <div class="t-stat">{esc(stat)}</div>
+        for d in [x for x in ref_diffs if x['stat'] == stat]:
+            v, lo, hi, other = signed(d)
+            if d['is_control']:
+                verdict, cls = 'control — passes' if lo <= 0 <= hi \
+                    else 'control — FAILS', 'ctl' if lo <= 0 <= hi else 'ns'
+            elif lo <= 0 <= hi:
+                verdict, cls = 'not distinguishable from zero', 'ns'
+            else:
+                verdict, cls = 'excludes zero', 'sig'
+            tiles.append(f'''<div class="tile {cls}" style="border-left-color:var(--s-{other})">
+      <div class="t-stat">{esc(stat)} &middot; {esc(L.label(other))}</div>
       <div class="t-val">{v * 100:+.1f}</div>
       <div class="t-ci">95% CI {lo * 100:+.1f} to {hi * 100:+.1f}</div>
       <div class="t-verdict">{esc(verdict)}</div>
@@ -201,12 +210,12 @@ def main():
     # ---- per-league coefficient rows -------------------------------------
     f_rows = []
     for stat in ORDER:
-        for lg in ('ncaa', 'wnba'):
+        for lg in keys:
             c = cells.get((stat, lg))
             if not c:
                 continue
             f_rows.append({
-                'label': f"{stat} · {LEAGUE[lg]['label']}",
+                'label': f"{stat} · {L.label(lg)}",
                 'sub': f"n={c['n']} · own weight {c['own_weight']:.0%}",
                 'value': c['shrunk'], 'lo': c['ci_lo'], 'hi': c['ci_hi'],
                 'league': lg,
@@ -216,16 +225,17 @@ def main():
 
     d_rows = []
     for stat in ORDER:
-        d = diffs.get(stat)
-        if not d:
-            continue
-        crosses = d['diff_ci_lo'] <= 0 <= d['diff_ci_hi']
-        d_rows.append({
-            'label': stat, 'sub': 'NCAA − WNBA',
-            'value': d['diff_raw'], 'lo': d['diff_ci_lo'],
-            'hi': d['diff_ci_hi'], 'league': None,
-            'hollow': crosses,
-            'note': 'interval covers zero' if crosses else 'interval excludes zero'})
+        for d in [x for x in diffs if x['stat'] == stat]:
+            v, lo, hi, other = signed(d) if d.get('vs_reference') else (
+                d['diff_raw'], d['diff_ci_lo'], d['diff_ci_hi'], d['a'])
+            lab = (f"{L.label(other)} − {L.label(ref)}" if d.get('vs_reference')
+                   else d['pair'].replace(' - ', ' − '))
+            d_rows.append({
+                'label': stat, 'sub': lab, 'value': v, 'lo': lo, 'hi': hi,
+                'league': other if d.get('vs_reference') else None,
+                'hollow': lo <= 0 <= hi,
+                'note': 'interval covers zero' if lo <= 0 <= hi
+                        else 'interval excludes zero'})
 
     # ---- audit table -----------------------------------------------------
     by_player = defaultdict(dict)
@@ -237,7 +247,8 @@ def main():
     for (name, lg), rec in sorted(by_player.items(), key=lambda kv: kv[0][0]):
         m = rec['meta']
         tds = [f'<td class="nm">{esc(name)}</td>',
-               f'<td><span class="pill {lg}">{LEAGUE[lg]["label"]}</span></td>',
+               f'<td><span class="pill" style="background:var(--s-{lg})">'
+               f'{esc(L.label(lg))}</span></td>',
                f'<td class="sub">{esc(m["team"] or "")}</td>',
                f'<td class="sub">{esc(m["nation"] or "")}</td>']
         for stat in ORDER:
@@ -268,7 +279,18 @@ def main():
     # Dated from the fit, never from the clock: the page is a committed build
     # artefact and CI fails it if a rebuild differs, so today's date would make
     # it stale every midnight.
+    n_tot = co['matched']['total']
+    by_lg = co['matched']['by_league']
     built = co.get('fitted_on') or 'unknown'
+    ref_label = L.label(ref)
+    _ls = [L.label(k) for k in keys]
+    league_list = (' and '.join(_ls) if len(_ls) < 3
+                   else ', '.join(_ls[:-1]) + ' and ' + _ls[-1])
+    league_counts = ', '.join(f"{by_lg.get(k, 0)} {L.label(k)}" for k in keys)
+    ctl_line = '; '.join(
+        f"<strong>{100 * cells[(ctl_name, k)]['raw_gap']:+.1f}</strong> "
+        f"for the {esc(L.label(k))}"
+        for k in keys if (ctl_name, k) in cells)
     n_qual = len({(p['name'], p['league']) for p in pairs})
     # ---- robustness ------------------------------------------------------
     thr_html = infl_html = comp_html = ''
@@ -324,9 +346,11 @@ def main():
             # wider gutter: competition names are far longer than stat names
             comp_html = forest(rows_c, row_h=36, pad_l=230, pad_r=70)
 
+    ctl_ds = [d for d in diffs if d['is_control']]
+    ctl_max = max((abs(d['diff_raw']) for d in ctl_ds), default=0.0) * 100
+    ctl_span = max((d['diff_ci_hi'] - d['diff_ci_lo'] for d in ctl_ds),
+                   default=0.0) * 100
     off = co.get('offset') or 0.0
-    n_tot = co['matched']['total']
-    by_lg = co['matched']['by_league']
 
     html = f'''<!doctype html>
 <html lang="en">
@@ -340,7 +364,7 @@ def main():
   --page:#f9f9f7; --surface:#fcfcfb;
   --ink-1:#0b0b0b; --ink-2:#52514e; --ink-3:#898781;
   --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
-  --s-ncaa:{LEAGUE['ncaa']['light']}; --s-wnba:{LEAGUE['wnba']['light']};
+  {css_light}
   --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
 }}
 @media (prefers-color-scheme: dark) {{
@@ -349,7 +373,7 @@ def main():
     --page:#0d0d0d; --surface:#1a1a19;
     --ink-1:#f0efec; --ink-2:#c3c2b7; --ink-3:#898781;
     --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
-    --s-ncaa:{LEAGUE['ncaa']['dark']}; --s-wnba:{LEAGUE['wnba']['dark']};
+    {css_dark}
   }}
 }}
 :root[data-theme="dark"] {{
@@ -357,7 +381,7 @@ def main():
   --page:#0d0d0d; --surface:#1a1a19;
   --ink-1:#f0efec; --ink-2:#c3c2b7; --ink-3:#898781;
   --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
-  --s-ncaa:{LEAGUE['ncaa']['dark']}; --s-wnba:{LEAGUE['wnba']['dark']};
+  {css_dark}
 }}
 * {{ box-sizing:border-box }}
 body {{
@@ -428,8 +452,6 @@ td.empty {{ color:var(--ink-3) }}
 .hit-zero {{ font-weight:700; color:var(--ink-1) }}
 .pill {{ font-size:11px; font-weight:650; padding:2px 7px; border-radius:20px;
         color:#fff }}
-.pill.ncaa {{ background:var(--s-ncaa) }}
-.pill.wnba {{ background:var(--s-wnba) }}
 .tbl-wrap {{ max-height:560px; overflow:auto; border:1px solid var(--ring);
             border-radius:12px; background:var(--surface) }}
 .controls {{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;
@@ -461,9 +483,9 @@ a {{ color:var(--s-ncaa) }}
 
 <header>
   <h1>How much of a club season survives the jump to FIBA?</h1>
-  <p class="lede">Translation coefficients for the NCAA and the WNBA, measured
-  against senior international competition as a common reference frame. One
-  coefficient per shooting statistic per league.</p>
+  <p class="lede">Translation coefficients for {league_list}, measured against
+  senior international competition as a common reference frame. One coefficient
+  per shooting statistic per league.</p>
   <div class="meta">{n_tot} players matched across both environments
   ({by_lg.get('ncaa', 0)} NCAA, {by_lg.get('wnba', 0)} WNBA) ·
   senior FIBA 2025&ndash;2026 · fitted {built}</div>
@@ -471,13 +493,14 @@ a {{ color:var(--s-ncaa) }}
 
 <section>
   <h2>The headline</h2>
-  <h3>NCAA minus WNBA, in percentage points</h3>
-  <p>How much more a player's rate falls when she arrives from the NCAA rather
-  than from the WNBA. This difference is the quantity the data actually
-  identifies, for the reason set out under <em>the control</em> below.</p>
+  <h3>Each league minus the {ref_label}, in percentage points</h3>
+  <p>How much more a player's rate falls when she arrives from that league
+  rather than from the {ref_label}. This difference is the quantity the data
+  actually identifies, for the reason set out under <em>the control</em>
+  below.</p>
   <div class="tiles">{''.join(tiles)}</div>
-  <p class="note">A negative figure means NCAA production overstates a player
-  relative to the same production in the WNBA.</p>
+  <p class="note">A negative figure means that league's production overstates a
+  player relative to the same production in the {ref_label}.</p>
 </section>
 
 <section>
@@ -486,29 +509,25 @@ a {{ color:var(--s-ncaa) }}
   <p>Nobody guards a free throw: same rim, same distance, no defender. If the
   method were measuring league difficulty, the free-throw coefficient would come
   out near zero. It did not. It came out at
-  <strong>{100 * (cells[('free throw', 'ncaa')]['raw_gap']):+.1f}</strong> for the
-  NCAA and
-  <strong>{100 * (cells[('free throw', 'wnba')]['raw_gap']):+.1f}</strong> for the
-  WNBA &mdash; a drop of about three points in both.</p>
+  {ctl_line} &mdash; a drop of about three points in each.</p>
   <p>That cannot be league difficulty. It is a flat cost of playing FIBA at
   all: travel, unfamiliar teammates, a different ball, compressed schedules.
-  And because it is common to both leagues, it sits on every absolute gap
+  And because it is common to every league, it sits on every absolute gap
   alike.</p>
   <p><strong>So absolute club&rarr;FIBA gaps are not interpretable as league
   strength. The difference between two leagues is, because the shared offset
-  cancels.</strong> On that scale the control passes, at
-  {100 * diffs['free throw']['diff_raw']:+.1f} points.</p>
+  cancels.</strong> On that scale the control passes: every pairwise control
+  difference is {ctl_max:.1f} points or less.</p>
   <p class="note">Estimated FIBA environment offset: {100 * off:+.1f} points.
   Worth its own scepticism &mdash; the control's interval spans
-  {100 * (diffs['free throw']['diff_ci_hi'] - diffs['free throw']['diff_ci_lo']):.0f}
-  points, so it could not have detected an offset difference the size of the
-  three-point effect. It bounds the method loosely, not tightly.</p>
+  {ctl_span:.0f} points, so it could not have detected an offset difference the
+  size of the three-point effect. It bounds the method loosely, not tightly.</p>
 </section>
 
 <section>
   <h2>Per league</h2>
   <h3>Club&rarr;FIBA gap, after shrinkage</h3>
-  {legend()}
+  {legend(keys)}
   <div class="card">{forest(f_rows, dom=(-0.09, 0.06))}</div>
   <p class="note">Shrunk toward the across-league mean in proportion to
   precision. <strong>Own weight</strong> is how much of each estimate is the
@@ -530,7 +549,7 @@ a {{ color:var(--s-ncaa) }}
 <section>
   <h2>Player level</h2>
   <h3>Every matched player, club rate against FIBA rate</h3>
-  {legend()}
+  {legend(keys)}
   <div class="controls">
     {''.join(f'<button class="btn" data-scat="{esc(s)}" aria-pressed="{str(s == "two point").lower()}">{esc(s)}</button>' for s in ORDER)}
   </div>
