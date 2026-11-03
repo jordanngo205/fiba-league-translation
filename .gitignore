@@ -1,0 +1,20 @@
+# Credentials and session tokens -- never commit
+.env
+.synergy_token
+.synergy_token.tmp
+*.bak
+
+# Raw scraped Synergy data. Synergy Sports data is licensed; this repo is
+# public, so only derived results are tracked. Rebuild with src/scrape_*.py.
+data/translation/*.json
+!data/translation/coefficients.json
+!data/translation/matched_pairs.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
