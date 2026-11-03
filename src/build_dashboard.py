@@ -8,6 +8,7 @@ Charts are inline SVG with no external dependencies: the page is served from
 GitHub Pages and should not need a CDN to render a coefficient plot.
 """
 import json
+import re
 import sys
 from collections import Counter, defaultdict
 from datetime import date
@@ -93,8 +94,13 @@ def forest(rows, width=720, row_h=42, pad_l=136, pad_r=56, dom=None):
         fill = 'var(--surface)' if r.get('hollow') else col
         o.append(f'<circle class="dot" cx="{x(r["value"]):.1f}" cy="{cy}" r="6.5" '
                  f'fill="{fill}" stroke="{col}"/>')
-        val = (f'{r["value"] * 100:+.1f}  [{r["lo"] * 100:+.1f}, '
-               f'{r["hi"] * 100:+.1f}]')
+        # A point with no interval must not print one; lo == hi means the row
+        # is a single pooled figure, not a fitted estimate.
+        if abs(r['hi'] - r['lo']) < 1e-12:
+            val = f'{r["value"] * 100:+.1f}'
+        else:
+            val = (f'{r["value"] * 100:+.1f}  [{r["lo"] * 100:+.1f}, '
+                   f'{r["hi"] * 100:+.1f}]')
         o.append(f'<text class="row-val" x="{width - pad_r + 8}" y="{cy + 4}">'
                  f'{esc(val)}</text>')
         # invisible hit strip, comfortably larger than the marks
@@ -165,6 +171,8 @@ def legend():
 def main():
     co = json.load(open(DATA / 'coefficients.json'))
     pairs = json.load(open(DATA / 'matched_pairs.json'))
+    rb_path = DATA / 'robustness.json'
+    rb = json.load(open(rb_path)) if rb_path.exists() else {}
     cells = {(c['stat'], c['league']): c for c in co['cells']}
     diffs = {d['stat']: d for d in co['diffs']}
 
@@ -263,6 +271,60 @@ def main():
         for k, v in comps.most_common())
 
     n_qual = len({(p['name'], p['league']) for p in pairs})
+    # ---- robustness ------------------------------------------------------
+    thr_html = infl_html = comp_html = ''
+    if rb:
+        hdr = ''.join(f'<th class="num">{esc(x)}</th>' for x in ORDER)
+        trs = []
+        for r in rb.get('thresholds', []):
+            tds = []
+            for st in ORDER:
+                d = r['stats'].get(st)
+                if not d:
+                    tds.append('<td class="num empty">—</td>')
+                    continue
+                crosses = d['lo'] <= 0 <= d['hi']
+                mark = '' if crosses else ' class="hit-zero"'
+                tds.append(
+                    f'<td class="num"><span{mark}>{100 * d["diff"]:+.1f}</span>'
+                    f'<span class="gp"> [{100 * d["lo"]:+.1f}, '
+                    f'{100 * d["hi"]:+.1f}] n{d["min_n"]}</span></td>')
+            trs.append(f'<tr><td class="num">{r["min_club"]}</td>'
+                       f'<td class="num">{r["min_fiba"]}</td>'
+                       + ''.join(tds) + '</tr>')
+        thr_html = (f'<table><thead><tr><th class="num">min club</th>'
+                    f'<th class="num">min FIBA</th>{hdr}</tr></thead>'
+                    f'<tbody>{"".join(trs)}</tbody></table>')
+
+        parts = []
+        for key, lab in (('influence', 'two point'),
+                         ('influence_3pt', 'three point')):
+            i = rb.get(key)
+            if not i:
+                continue
+            parts.append(
+                f'<li><strong>{esc(lab)}</strong>: largest swing '
+                f'{100 * i["max_abs_swing"]:.2f} pts across {i["n_refits"]} '
+                f'refits, on removing {esc(i["max_swing_player"] or "—")} '
+                f'(base {100 * i["base"]:+.2f}).</li>')
+        infl_html = f'<ul>{"".join(parts)}</ul>'
+
+        comps_r = rb.get('offset_by_competition', [])
+        if comps_r:
+            # Strip only a trailing women's marker. An unanchored replace of
+            # ' W' turned "FIBA World Championships" into "FIBAorld".
+            def _clean(n):
+                return re.sub(r'\s*\(?\s*W\s*\)?\s*$', '', n).strip()
+
+            rows_c = [{'label': _clean(c['competition'])[:30],
+                       'sub': f"n={c['n']}",
+                       'value': c['gap'], 'lo': c['gap'], 'hi': c['gap'],
+                       'league': None, 'hollow': False,
+                       'note': f"free-throw gap, {c['n']} players"}
+                      for c in comps_r]
+            # wider gutter: competition names are far longer than stat names
+            comp_html = forest(rows_c, row_h=36, pad_l=230, pad_r=70)
+
     off = co.get('offset') or 0.0
     n_tot = co['matched']['total']
     by_lg = co['matched']['by_league']
@@ -364,6 +426,7 @@ td.nm {{ font-weight:560 }}
 td.sub {{ color:var(--ink-3); font-size:12px }}
 td.empty {{ color:var(--ink-3) }}
 .gp {{ color:var(--ink-3); font-size:11.5px }}
+.hit-zero {{ font-weight:700; color:var(--ink-1) }}
 .pill {{ font-size:11px; font-weight:650; padding:2px 7px; border-radius:20px;
         color:#fff }}
 .pill.ncaa {{ background:var(--s-ncaa) }}
@@ -508,6 +571,36 @@ a {{ color:var(--s-ncaa) }}
   brackets. Hover for the underlying makes and attempts. Minimum sample to
   qualify: {co['min_club_att']} club attempts and {co['min_fiba_att']} FIBA
   attempts.</p>
+</section>
+
+<section>
+  <h2>Robustness</h2>
+  <h3>Does the result survive being made harder to produce?</h3>
+  <p>A coefficient that exists only at one arbitrary sample threshold is not a
+  finding. Each row below re-fits everything from scratch at a stricter minimum.
+  <strong>Bold</strong> marks an interval that excludes zero.</p>
+  <div class="tbl-wrap">{thr_html}</div>
+  <p class="note">The two-point difference excludes zero at every cutoff tried.
+  The three-point difference crosses zero at every one, which settles it as a
+  non-result rather than a borderline one. The control degrades at the strictest
+  cutoffs, where it is down to a handful of players &mdash; it bounds the method
+  only where it has sample.</p>
+
+  <h3 style="margin-top:30px">Does one player carry it?</h3>
+  {infl_html}
+  <p class="note">Leave-one-player-out, refitting once per removed player.</p>
+
+  <h3 style="margin-top:30px">Is the environment offset really one number?</h3>
+  <p>The method assumes a single FIBA environment offset. Estimated separately
+  per competition, the control does not look like one number at all.</p>
+  <div class="card">{comp_html}</div>
+  <p class="note">Free-throw gap by event, against a pooled offset of
+  {100 * off:+.1f}. The spread is about nine points, so the offset looks like a
+  property of the event rather than of FIBA. <strong>This weakens the adjusted
+  per-league columns and leaves the league differences untouched</strong>, since
+  a difference cancels whatever the offset is &mdash; a stronger reason to lead
+  with them than the control alone provided. No interval is drawn: these are
+  single pooled gaps, not fitted estimates.</p>
 </section>
 
 <section>
