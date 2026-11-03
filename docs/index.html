@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FIBA League Translation</title>
+<style>
+:root {
+  color-scheme: light;
+  --page:#f9f9f7; --surface:#fcfcfb;
+  --ink-1:#0b0b0b; --ink-2:#52514e; --ink-3:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --ring:rgba(11,11,11,.10);
+  --s-ncaa:#2a78d6; --s-wnba:#eb6834;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19;
+    --ink-1:#f0efec; --ink-2:#c3c2b7; --ink-3:#898781;
+    --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+    --s-ncaa:#3987e5; --s-wnba:#d95926;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19;
+  --ink-1:#f0efec; --ink-2:#c3c2b7; --ink-3:#898781;
+  --grid:#2c2c2a; --axis:#383835; --ring:rgba(255,255,255,.10);
+  --s-ncaa:#3987e5; --s-wnba:#d95926;
+}
+* { box-sizing:border-box }
+body {
+  margin:0; background:var(--page); color:var(--ink-1);
+  font:15px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+.wrap { max-width:1000px; margin:0 auto; padding:0 16px 80px }
+header { padding:52px 0 8px }
+h1 { font-size:30px; line-height:1.2; margin:0 0 10px; letter-spacing:-.02em }
+.lede { font-size:17px; color:var(--ink-2); max-width:62ch; margin:0 0 6px }
+.meta { font-size:13px; color:var(--ink-3); margin-top:14px }
+section { margin-top:44px }
+h2 { font-size:13px; text-transform:uppercase; letter-spacing:.09em;
+     color:var(--ink-3); margin:0 0 16px; font-weight:650 }
+h3 { font-size:19px; margin:0 0 8px }
+h4 { font-size:13px; color:var(--ink-2); margin:0 0 6px; font-weight:600 }
+p { max-width:68ch; color:var(--ink-2); margin:0 0 12px }
+p strong { color:var(--ink-1) }
+.card { background:var(--surface); border:1px solid var(--ring);
+        border-radius:12px; padding:22px }
+.tiles { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)) }
+.tile { background:var(--surface); border:1px solid var(--ring);
+        border-radius:12px; padding:16px 18px; border-left:3px solid var(--ink-3) }
+.tile.sig { border-left-color:var(--s-ncaa) }
+.tile.ns  { border-left-color:var(--axis) }
+.tile.ctl { border-left-color:var(--good) }
+.t-stat { font-size:12px; text-transform:uppercase; letter-spacing:.07em;
+          color:var(--ink-3); font-weight:650 }
+.t-val { font-size:34px; font-weight:680; letter-spacing:-.02em; margin:4px 0 2px }
+.t-ci { font-size:12.5px; color:var(--ink-2); font-variant-numeric:tabular-nums }
+.t-verdict { font-size:12.5px; margin-top:7px; font-weight:600 }
+.tile.sig .t-verdict { color:var(--s-ncaa) }
+.tile.ns  .t-verdict { color:var(--ink-3) }
+.tile.ctl .t-verdict { color:var(--good) }
+.chart { width:100%; height:auto; display:block; overflow:visible }
+.scat { max-width:470px; margin:0 auto }
+.grid { stroke:var(--grid); stroke-width:1 }
+.zero { stroke:var(--axis); stroke-width:2 }
+.zero-lab, .tick, .ax { fill:var(--ink-3); font-size:11px }
+.ident { stroke:var(--axis); stroke-width:2; stroke-dasharray:4 4 }
+.ident-lab { fill:var(--ink-3); font-size:11px }
+.row-lab { fill:var(--ink-1); font-size:13px; font-weight:560 }
+.row-sub { fill:var(--ink-3); font-size:11px }
+.row-val { fill:var(--ink-2); font-size:12px; font-variant-numeric:tabular-nums }
+.ci { stroke-width:2 }
+.cap { stroke-width:2 }
+.dot { stroke-width:2; paint-order:stroke }
+.pt { stroke:var(--surface); stroke-width:2 }
+.hit { fill:transparent }
+.hit:hover ~ .dot { r:8 }
+.legend { display:flex; gap:18px; margin:2px 0 10px; font-size:12.5px;
+          color:var(--ink-2) }
+.lg-item { display:flex; align-items:center; gap:7px }
+.sw { width:11px; height:11px; border-radius:3px; display:inline-block }
+.row2 { display:grid; gap:22px; grid-template-columns:1fr 1fr }
+@media (max-width:760px) { .row2 { grid-template-columns:1fr } }
+table { width:100%; border-collapse:collapse; font-size:13px }
+th { text-align:left; font-size:11px; text-transform:uppercase;
+     letter-spacing:.06em; color:var(--ink-3); font-weight:650;
+     padding:8px 10px; border-bottom:1px solid var(--axis); position:sticky;
+     top:0; background:var(--surface) }
+td { padding:7px 10px; border-bottom:1px solid var(--grid) }
+td.num, th.num { text-align:right; font-variant-numeric:tabular-nums }
+td.nm { font-weight:560 }
+td.sub { color:var(--ink-3); font-size:12px }
+td.empty { color:var(--ink-3) }
+.gp { color:var(--ink-3); font-size:11.5px }
+.pill { font-size:11px; font-weight:650; padding:2px 7px; border-radius:20px;
+        color:#fff }
+.pill.ncaa { background:var(--s-ncaa) }
+.pill.wnba { background:var(--s-wnba) }
+.tbl-wrap { max-height:560px; overflow:auto; border:1px solid var(--ring);
+            border-radius:12px; background:var(--surface) }
+.controls { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;
+            align-items:center }
+input[type=search], select { font:inherit; font-size:13px; padding:7px 11px;
+  border:1px solid var(--axis); border-radius:8px; background:var(--surface);
+  color:var(--ink-1) }
+.btn { font:inherit; font-size:12.5px; font-weight:600; padding:6px 13px;
+  border:1px solid var(--axis); border-radius:20px; background:var(--surface);
+  color:var(--ink-2); cursor:pointer }
+.btn[aria-pressed=true] { background:var(--ink-1); color:var(--page);
+  border-color:var(--ink-1) }
+#tip { position:fixed; pointer-events:none; opacity:0; transition:opacity .1s;
+  background:var(--ink-1); color:var(--page); font-size:12px; padding:7px 10px;
+  border-radius:7px; max-width:320px; z-index:9; line-height:1.45 }
+.note { font-size:13px; color:var(--ink-3); margin-top:10px; max-width:68ch }
+ul { max-width:68ch; color:var(--ink-2); padding-left:20px }
+li { margin-bottom:7px }
+.flag { display:inline-block; font-size:11px; font-weight:650; padding:1px 7px;
+  border-radius:4px; background:var(--grid); color:var(--ink-2); margin-right:6px }
+footer { margin-top:56px; padding-top:20px; border-top:1px solid var(--grid);
+  font-size:12.5px; color:var(--ink-3) }
+a { color:var(--s-ncaa) }
+</style>
+</head>
+<body>
+<div id="tip"></div>
+<div class="wrap">
+
+<header>
+  <h1>How much of a club season survives the jump to FIBA?</h1>
+  <p class="lede">Translation coefficients for the NCAA and the WNBA, measured
+  against senior international competition as a common reference frame. One
+  coefficient per shooting statistic per league.</p>
+  <div class="meta">260 players matched across both environments
+  (151 NCAA, 109 WNBA) ·
+  senior FIBA 2025&ndash;2026 · built 2026-11-02</div>
+</header>
+
+<section>
+  <h2>The headline</h2>
+  <h3>NCAA minus WNBA, in percentage points</h3>
+  <p>How much more a player's rate falls when she arrives from the NCAA rather
+  than from the WNBA. This difference is the quantity the data actually
+  identifies, for the reason set out under <em>the control</em> below.</p>
+  <div class="tiles"><div class="tile ctl">
+      <div class="t-stat">free throw</div>
+      <div class="t-val">-0.1</div>
+      <div class="t-ci">95% CI -4.4 to +4.3</div>
+      <div class="t-verdict">control — passes</div>
+    </div><div class="tile sig">
+      <div class="t-stat">two point</div>
+      <div class="t-val">-8.4</div>
+      <div class="t-ci">95% CI -11.5 to -5.3</div>
+      <div class="t-verdict">excludes zero</div>
+    </div><div class="tile ns">
+      <div class="t-stat">three point</div>
+      <div class="t-val">-3.6</div>
+      <div class="t-ci">95% CI -7.5 to +0.2</div>
+      <div class="t-verdict">not distinguishable from zero</div>
+    </div></div>
+  <p class="note">A negative figure means NCAA production overstates a player
+  relative to the same production in the WNBA.</p>
+</section>
+
+<section>
+  <h2>The control</h2>
+  <h3>Free throws should have shown nothing. They showed &minus;3.</h3>
+  <p>Nobody guards a free throw: same rim, same distance, no defender. If the
+  method were measuring league difficulty, the free-throw coefficient would come
+  out near zero. It did not. It came out at
+  <strong>-3.3</strong> for the
+  NCAA and
+  <strong>-3.2</strong> for the
+  WNBA &mdash; a drop of about three points in both.</p>
+  <p>That cannot be league difficulty. It is a flat cost of playing FIBA at
+  all: travel, unfamiliar teammates, a different ball, compressed schedules.
+  And because it is common to both leagues, it sits on every absolute gap
+  alike.</p>
+  <p><strong>So absolute club&rarr;FIBA gaps are not interpretable as league
+  strength. The difference between two leagues is, because the shared offset
+  cancels.</strong> On that scale the control passes, at
+  -0.1 points.</p>
+  <p class="note">Estimated FIBA environment offset: -2.4 points.
+  Worth its own scepticism &mdash; the control's interval spans
+  9
+  points, so it could not have detected an offset difference the size of the
+  three-point effect. It bounds the method loosely, not tightly.</p>
+</section>
+
+<section>
+  <h2>Per league</h2>
+  <h3>Club&rarr;FIBA gap, after shrinkage</h3>
+  <div class="legend"><span class="lg-item"><span class="sw" style="background:var(--s-ncaa)"></span>NCAA</span><span class="lg-item"><span class="sw" style="background:var(--s-wnba)"></span>WNBA</span></div>
+  <div class="card"><svg class="chart" viewBox="0 0 720 298" role="img" aria-label="Coefficient estimates with 95 percent intervals">
+<line class="grid" x1="187.1" y1="28" x2="187.1" y2="280"/>
+<text class="tick" x="187.1" y="294" text-anchor="middle">-9</text>
+<line class="grid" x1="272.3" y1="28" x2="272.3" y2="280"/>
+<text class="tick" x="272.3" y="294" text-anchor="middle">-6</text>
+<line class="grid" x1="357.4" y1="28" x2="357.4" y2="280"/>
+<text class="tick" x="357.4" y="294" text-anchor="middle">-3</text>
+<line class="grid" x1="442.6" y1="28" x2="442.6" y2="280"/>
+<text class="tick" x="442.6" y="294" text-anchor="middle">+0</text>
+<line class="grid" x1="527.7" y1="28" x2="527.7" y2="280"/>
+<text class="tick" x="527.7" y="294" text-anchor="middle">+3</text>
+<line class="grid" x1="612.9" y1="28" x2="612.9" y2="280"/>
+<text class="tick" x="612.9" y="294" text-anchor="middle">+6</text>
+<line class="zero" x1="442.6" y1="22" x2="442.6" y2="280"/>
+<text class="zero-lab" x="442.6" y="14" text-anchor="middle">no change</text>
+<text class="row-lab" x="124" y="44" text-anchor="end">free throw · NCAA</text>
+<text class="row-sub" x="124" y="57" text-anchor="end">n=45 · own weight 0%</text>
+<line class="ci" x1="313.1" y1="40" x2="436.1" y2="40" stroke="var(--s-ncaa)"/>
+<line class="cap" x1="313.1" y1="35" x2="313.1" y2="45" stroke="var(--s-ncaa)"/>
+<line class="cap" x1="436.1" y1="35" x2="436.1" y2="45" stroke="var(--s-ncaa)"/>
+<circle class="dot" cx="374.6" cy="40" r="6.5" fill="var(--s-ncaa)" stroke="var(--s-ncaa)"/>
+<text class="row-val" x="672" y="44">-2.4  [-4.6, -0.2]</text>
+<rect class="hit" x="136" y="24" width="528" height="32" data-tip="free throw · NCAA — -2.4  [-4.6, -0.2] pts · control statistic"/>
+<text class="row-lab" x="124" y="86" text-anchor="end">free throw · WNBA</text>
+<text class="row-sub" x="124" y="99" text-anchor="end">n=43 · own weight 0%</text>
+<line class="ci" x1="313.1" y1="82" x2="436.1" y2="82" stroke="var(--s-wnba)"/>
+<line class="cap" x1="313.1" y1="77" x2="313.1" y2="87" stroke="var(--s-wnba)"/>
+<line class="cap" x1="436.1" y1="77" x2="436.1" y2="87" stroke="var(--s-wnba)"/>
+<circle class="dot" cx="374.6" cy="82" r="6.5" fill="var(--s-wnba)" stroke="var(--s-wnba)"/>
+<text class="row-val" x="672" y="86">-2.4  [-4.6, -0.2]</text>
+<rect class="hit" x="136" y="66" width="528" height="32" data-tip="free throw · WNBA — -2.4  [-4.6, -0.2] pts · control statistic"/>
+<text class="row-lab" x="124" y="128" text-anchor="end">two point · NCAA</text>
+<text class="row-sub" x="124" y="141" text-anchor="end">n=89 · own weight 96%</text>
+<line class="ci" x1="249.7" y1="124" x2="364.7" y2="124" stroke="var(--s-ncaa)"/>
+<line class="cap" x1="249.7" y1="119" x2="249.7" y2="129" stroke="var(--s-ncaa)"/>
+<line class="cap" x1="364.7" y1="119" x2="364.7" y2="129" stroke="var(--s-ncaa)"/>
+<circle class="dot" cx="307.2" cy="124" r="6.5" fill="var(--s-ncaa)" stroke="var(--s-ncaa)"/>
+<text class="row-val" x="672" y="128">-4.8  [-6.8, -2.7]</text>
+<rect class="hit" x="136" y="108" width="528" height="32" data-tip="two point · NCAA — -4.8  [-6.8, -2.7] pts · club 50.4% → FIBA 43.8%"/>
+<text class="row-lab" x="124" y="170" text-anchor="end">two point · WNBA</text>
+<text class="row-sub" x="124" y="183" text-anchor="end">n=63 · own weight 95%</text>
+<line class="ci" x1="449.0" y1="166" x2="571.1" y2="166" stroke="var(--s-wnba)"/>
+<line class="cap" x1="449.0" y1="161" x2="449.0" y2="171" stroke="var(--s-wnba)"/>
+<line class="cap" x1="571.1" y1="161" x2="571.1" y2="171" stroke="var(--s-wnba)"/>
+<circle class="dot" cx="510.0" cy="166" r="6.5" fill="var(--s-wnba)" stroke="var(--s-wnba)"/>
+<text class="row-val" x="672" y="170">+2.4  [+0.2, +4.5]</text>
+<rect class="hit" x="136" y="150" width="528" height="32" data-tip="two point · WNBA — +2.4  [+0.2, +4.5] pts · club 52.5% → FIBA 54.3%"/>
+<text class="row-lab" x="124" y="212" text-anchor="end">three point · NCAA</text>
+<text class="row-sub" x="124" y="225" text-anchor="end">n=66 · own weight 79%</text>
+<line class="ci" x1="348.3" y1="208" x2="472.3" y2="208" stroke="var(--s-ncaa)"/>
+<line class="cap" x1="348.3" y1="203" x2="348.3" y2="213" stroke="var(--s-ncaa)"/>
+<line class="cap" x1="472.3" y1="203" x2="472.3" y2="213" stroke="var(--s-ncaa)"/>
+<circle class="dot" cx="410.3" cy="208" r="6.5" fill="var(--surface)" stroke="var(--s-ncaa)"/>
+<text class="row-val" x="672" y="212">-1.1  [-3.3, +1.0]</text>
+<rect class="hit" x="136" y="192" width="528" height="32" data-tip="three point · NCAA — -1.1  [-3.3, +1.0] pts · club 33.4% → FIBA 31.8%"/>
+<text class="row-lab" x="124" y="254" text-anchor="end">three point · WNBA</text>
+<text class="row-sub" x="124" y="267" text-anchor="end">n=51 · own weight 78%</text>
+<line class="ci" x1="443.0" y1="250" x2="567.0" y2="250" stroke="var(--s-wnba)"/>
+<line class="cap" x1="443.0" y1="245" x2="443.0" y2="255" stroke="var(--s-wnba)"/>
+<line class="cap" x1="567.0" y1="245" x2="567.0" y2="255" stroke="var(--s-wnba)"/>
+<circle class="dot" cx="505.0" cy="250" r="6.5" fill="var(--s-wnba)" stroke="var(--s-wnba)"/>
+<text class="row-val" x="672" y="254">+2.2  [+0.0, +4.4]</text>
+<rect class="hit" x="136" y="234" width="528" height="32" data-tip="three point · WNBA — +2.2  [+0.0, +4.4] pts · club 34.4% → FIBA 36.5%"/>
+</svg></div>
+  <p class="note">Shrunk toward the across-league mean in proportion to
+  precision. <strong>Own weight</strong> is how much of each estimate is the
+  league's own data rather than the pooled mean; at 0% the leagues are
+  indistinguishable on that statistic, which is an answer rather than a
+  failure. A hollow marker means the interval covers zero. These are absolute
+  gaps, so they carry the environment offset.</p>
+</section>
+
+<section>
+  <h2>League difference</h2>
+  <h3>The offset-free quantity</h3>
+  <div class="card"><svg class="chart" viewBox="0 0 720 172" role="img" aria-label="Coefficient estimates with 95 percent intervals">
+<line class="grid" x1="187.1" y1="28" x2="187.1" y2="154"/>
+<text class="tick" x="187.1" y="168" text-anchor="middle">-12</text>
+<line class="grid" x1="291.8" y1="28" x2="291.8" y2="154"/>
+<text class="tick" x="291.8" y="168" text-anchor="middle">-8</text>
+<line class="grid" x1="396.6" y1="28" x2="396.6" y2="154"/>
+<text class="tick" x="396.6" y="168" text-anchor="middle">-4</text>
+<line class="grid" x1="501.3" y1="28" x2="501.3" y2="154"/>
+<text class="tick" x="501.3" y="168" text-anchor="middle">+0</text>
+<line class="grid" x1="606.1" y1="28" x2="606.1" y2="154"/>
+<text class="tick" x="606.1" y="168" text-anchor="middle">+4</text>
+<line class="zero" x1="501.3" y1="22" x2="501.3" y2="154"/>
+<text class="zero-lab" x="501.3" y="14" text-anchor="middle">no change</text>
+<text class="row-lab" x="124" y="44" text-anchor="end">free throw</text>
+<text class="row-sub" x="124" y="57" text-anchor="end">NCAA − WNBA</text>
+<line class="ci" x1="385.2" y1="40" x2="612.9" y2="40" stroke="var(--ink-2)"/>
+<line class="cap" x1="385.2" y1="35" x2="385.2" y2="45" stroke="var(--ink-2)"/>
+<line class="cap" x1="612.9" y1="35" x2="612.9" y2="45" stroke="var(--ink-2)"/>
+<circle class="dot" cx="499.1" cy="40" r="6.5" fill="var(--surface)" stroke="var(--ink-2)"/>
+<text class="row-val" x="672" y="44">-0.1  [-4.4, +4.3]</text>
+<rect class="hit" x="136" y="24" width="528" height="32" data-tip="free throw — -0.1  [-4.4, +4.3] pts · interval covers zero"/>
+<text class="row-lab" x="124" y="86" text-anchor="end">two point</text>
+<text class="row-sub" x="124" y="99" text-anchor="end">NCAA − WNBA</text>
+<line class="ci" x1="201.1" y1="82" x2="363.0" y2="82" stroke="var(--ink-2)"/>
+<line class="cap" x1="201.1" y1="77" x2="201.1" y2="87" stroke="var(--ink-2)"/>
+<line class="cap" x1="363.0" y1="77" x2="363.0" y2="87" stroke="var(--ink-2)"/>
+<circle class="dot" cx="282.0" cy="82" r="6.5" fill="var(--ink-2)" stroke="var(--ink-2)"/>
+<text class="row-val" x="672" y="86">-8.4  [-11.5, -5.3]</text>
+<rect class="hit" x="136" y="66" width="528" height="32" data-tip="two point — -8.4  [-11.5, -5.3] pts · interval excludes zero"/>
+<text class="row-lab" x="124" y="128" text-anchor="end">three point</text>
+<text class="row-sub" x="124" y="141" text-anchor="end">NCAA − WNBA</text>
+<line class="ci" x1="305.3" y1="124" x2="507.6" y2="124" stroke="var(--ink-2)"/>
+<line class="cap" x1="305.3" y1="119" x2="305.3" y2="129" stroke="var(--ink-2)"/>
+<line class="cap" x1="507.6" y1="119" x2="507.6" y2="129" stroke="var(--ink-2)"/>
+<circle class="dot" cx="406.4" cy="124" r="6.5" fill="var(--surface)" stroke="var(--ink-2)"/>
+<text class="row-val" x="672" y="128">-3.6  [-7.5, +0.2]</text>
+<rect class="hit" x="136" y="108" width="528" height="32" data-tip="three point — -3.6  [-7.5, +0.2] pts · interval covers zero"/>
+</svg></div>
+  <p class="note">Unshrunk, because shrinkage pulls the two leagues toward a
+  common value and would understate the difference between them. Hollow markers
+  cover zero and are not results.</p>
+</section>
+
+<section>
+  <h2>Player level</h2>
+  <h3>Every matched player, club rate against FIBA rate</h3>
+  <div class="legend"><span class="lg-item"><span class="sw" style="background:var(--s-ncaa)"></span>NCAA</span><span class="lg-item"><span class="sw" style="background:var(--s-wnba)"></span>WNBA</span></div>
+  <div class="controls">
+    <button class="btn" data-scat="free throw" aria-pressed="false">free throw</button><button class="btn" data-scat="two point" aria-pressed="true">two point</button><button class="btn" data-scat="three point" aria-pressed="false">three point</button>
+  </div>
+  <div class="card"><div class="scat-wrap" data-stat="free throw" hidden><h4>free throw</h4><svg class="chart scat" viewBox="0 0 430 430" role="img" aria-label="Club rate against FIBA rate, one point per player">
+<line class="grid" x1="52.0" y1="378.0" x2="52.0" y2="52.0"/>
+<line class="grid" x1="52.0" y1="378.0" x2="378.0" y2="378.0"/>
+<text class="tick" x="52.0" y="394" text-anchor="middle">0</text>
+<text class="tick" x="44" y="382.0" text-anchor="end">0</text>
+<line class="grid" x1="117.2" y1="378.0" x2="117.2" y2="52.0"/>
+<line class="grid" x1="52.0" y1="312.8" x2="378.0" y2="312.8"/>
+<text class="tick" x="117.2" y="394" text-anchor="middle">20</text>
+<text class="tick" x="44" y="316.8" text-anchor="end">20</text>
+<line class="grid" x1="182.4" y1="378.0" x2="182.4" y2="52.0"/>
+<line class="grid" x1="52.0" y1="247.6" x2="378.0" y2="247.6"/>
+<text class="tick" x="182.4" y="394" text-anchor="middle">40</text>
+<text class="tick" x="44" y="251.6" text-anchor="end">40</text>
+<line class="grid" x1="247.6" y1="378.0" x2="247.6" y2="52.0"/>
+<line class="grid" x1="52.0" y1="182.4" x2="378.0" y2="182.4"/>
+<text class="tick" x="247.6" y="394" text-anchor="middle">60</text>
+<text class="tick" x="44" y="186.4" text-anchor="end">60</text>
+<line class="grid" x1="312.8" y1="378.0" x2="312.8" y2="52.0"/>
+<line class="grid" x1="52.0" y1="117.2" x2="378.0" y2="117.2"/>
+<text class="tick" x="312.8" y="394" text-anchor="middle">80</text>
+<text class="tick" x="44" y="121.2" text-anchor="end">80</text>
+<line class="grid" x1="378.0" y1="378.0" x2="378.0" y2="52.0"/>
+<line class="grid" x1="52.0" y1="52.0" x2="378.0" y2="52.0"/>
+<text class="tick" x="378.0" y="394" text-anchor="middle">100</text>
+<text class="tick" x="44" y="56.0" text-anchor="end">100</text>
+<line class="ident" x1="52.0" y1="378.0" x2="378.0" y2="52.0"/>
+<text class="ident-lab" x="312.8" y="97.6">same rate in both</text>
+<circle class="pt" cx="288.0" cy="86.9" r="6.7" fill="var(--s-wnba)" data-tip="Kennedy Burke (WNBA, Turkey) — club 97/134 = 72%, FIBA 25/28 = 89%"/>
+<circle class="pt" cx="277.6" cy="100.9" r="6.3" fill="var(--s-wnba)" data-tip="Dominique Malonga (WNBA, France) — club 146/211 = 69%, FIBA 17/20 = 85%"/>
+<circle class="pt" cx="320.2" cy="123.3" r="6.9" fill="var(--s-wnba)" data-tip="Gabby Williams (WNBA, France) — club 209/254 = 82%, FIBA 25/32 = 78%"/>
+<circle class="pt" cx="311.3" cy="117.2" r="6.5" fill="var(--s-wnba)" data-tip="Janelle Salaün (WNBA, France) — club 140/176 = 80%, FIBA 20/25 = 80%"/>
+<circle class="pt" cx="306.9" cy="100.9" r="6.3" fill="var(--s-wnba)" data-tip="Leïla Lacan (WNBA, France) — club 86/110 = 78%, FIBA 17/20 = 85%"/>
+<circle class="pt" cx="333.3" cy="52.0" r="5.9" fill="var(--s-wnba)" data-tip="Marine Johannes (WNBA, France) — club 44/51 = 86%, FIBA 14/14 = 100%"/>
+<circle class="pt" cx="340.0" cy="160.7" r="5.5" fill="var(--s-wnba)" data-tip="Pauline Astier (WNBA, France) — club 91/103 = 88%, FIBA 6/9 = 67%"/>
+<circle class="pt" cx="320.5" cy="94.1" r="6.8" fill="var(--s-wnba)" data-tip="Valeriane Ayayi (WNBA, France) — club 98/119 = 82%, FIBA 27/31 = 87%"/>
+<circle class="pt" cx="260.4" cy="171.5" r="6.8" fill="var(--s-wnba)" data-tip="Jessica Shepard (WNBA, Slovenia) — club 179/280 = 64%, FIBA 19/30 = 63%"/>
+<circle class="pt" cx="320.5" cy="91.1" r="6.5" fill="var(--s-wnba)" data-tip="Laura Juskaite (WNBA, Lithuania) — club 112/136 = 82%, FIBA 22/25 = 88%"/>
+<circle class="pt" cx="323.2" cy="107.9" r="7.0" fill="var(--s-wnba)" data-tip="Cecilia Zandalasini (WNBA, Italy) — club 89/107 = 83%, FIBA 29/35 = 83%"/>
+<circle class="pt" cx="260.3" cy="154.9" r="6.2" fill="var(--s-wnba)" data-tip="Temi Fagbenle (WNBA, GreatBritain) — club 46/72 = 64%, FIBA 13/19 = 68%"/>
+<circle class="pt" cx="338.2" cy="145.1" r="6.7" fill="var(--s-wnba)" data-tip="Maria Conde (WNBA, Spain) — club 36/41 = 88%, FIBA 20/28 = 71%"/>
+<circle class="pt" cx="301.3" cy="139.8" r="6.6" fill="var(--s-wnba)" data-tip="Megan Gustafson (WNBA, Spain) — club 78/102 = 76%, FIBA 19/26 = 73%"/>
+<circle class="pt" cx="276.3" cy="215.0" r="5.8" fill="var(--s-wnba)" data-tip="Natasha Mack (WNBA, Montenegro) — club 75/109 = 69%, FIBA 6/12 = 50%"/>
+<circle class="pt" cx="334.1" cy="52.0" r="5.9" fill="var(--s-wnba)" data-tip="Frieda Buhner (WNBA, Germany) — club 45/52 = 87%, FIBA 14/14 = 100%"/>
+<circle class="pt" cx="329.3" cy="101.4" r="6.9" fill="var(--s-wnba)" data-tip="Leonie Fiebich (WNBA, Germany) — club 91/107 = 85%, FIBA 28/33 = 85%"/>
+<circle class="pt" cx="274.8" cy="178.2" r="6.8" fill="var(--s-wnba)" data-tip="Nyara Sabally (WNBA, Germany) — club 82/120 = 68%, FIBA 19/31 = 61%"/>
+<circle class="pt" cx="317.3" cy="128.7" r="6.1" fill="var(--s-wnba)" data-tip="Emma Meesseman (WNBA, Belgium) — club 35/43 = 81%, FIBA 13/17 = 76%"/>
+<circle class="pt" cx="277.1" cy="166.1" r="6.3" fill="var(--s-wnba)" data-tip="Aaliyah Edwards (WNBA, Canada) — club 125/181 = 69%, FIBA 13/20 = 65%"/>
+<circle class="pt" cx="327.4" cy="75.3" r="5.9" fill="var(--s-wnba)" data-tip="Bridget Carleton (WNBA, Canada) — club 98/116 = 84%, FIBA 13/14 = 93%"/>
+<circle class="pt" cx="330.3" cy="138.3" r="7.0" fill="var(--s-wnba)" data-tip="Damiris Dantas (WNBA, Brazil) — club 35/41 = 85%, FIBA 25/34 = 74%"/>
+<circle class="pt" cx="288.0" cy="153.4" r="7.4" fill="var(--s-wnba)" data-tip="Kamilla Cardoso (WNBA, Brazil) — club 249/344 = 72%, FIBA 31/45 = 69%"/>
+<circle class="pt" cx="291.7" cy="176.2" r="7.3" fill="var(--s-wnba)" data-tip="Angel Reese (WNBA, USA) — club 400/544 = 74%, FIBA 26/42 = 62%"/>
+<circle class="pt" cx="330.2" cy="124.4" r="6.6" fill="var(--s-wnba)" data-tip="Caitlin Clark (WNBA, USA) — club 268/314 = 85%, FIBA 21/27 = 78%"/>
+<circle class="pt" cx="339.7" cy="124.4" r="5.5" fill="var(--s-wnba)" data-tip="Chelsea Gray (WNBA, USA) — club 173/196 = 88%, FIBA 7/9 = 78%"/>
+<circle class="pt" cx="352.7" cy="170.5" r="5.7" fill="var(--s-wnba)" data-tip="Jackie Young (WNBA, USA) — club 357/387 = 92%, FIBA 7/11 = 64%"/>
+<circle class="pt" cx="316.9" cy="92.8" r="6.5" fill="var(--s-wnba)" data-tip="Kahleah Copper (WNBA, USA) — club 312/384 = 81%, FIBA 21/24 = 88%"/>
+<circle class="pt" cx="340.4" cy="117.2" r="5.6" fill="var(--s-wnba)" data-tip="Kelsey Plum (WNBA, USA) — club 284/321 = 88%, FIBA 8/10 = 80%"/>
+<circle class="pt" cx="285.8" cy="178.8" r="6.2" fill="var(--s-wnba)" data-tip="Kiki Iriafen (WNBA, USA) — club 274/382 = 72%, FIBA 11/18 = 61%"/>
+<circle class="pt" cx="338.1" cy="52.0" r="5.7" fill="var(--s-wnba)" data-tip="Paige Bueckers (WNBA, USA) — club 265/302 = 88%, FIBA 11/11 = 100%"/>
+<circle class="pt" cx="286.9" cy="128.7" r="6.1" fill="var(--s-wnba)" data-tip="Raegan Beers (WNBA, USA) — club 49/68 = 72%, FIBA 13/17 = 76%"/>
+<circle class="pt" cx="319.1" cy="111.3" r="5.7" fill="var(--s-wnba)" data-tip="Gabriela Jaquez (WNBA, Mexico) — club 59/72 = 82%, FIBA 9/11 = 82%"/>
+<circle class="pt" cx="240.3" cy="207.2" r="6.3" fill="var(--s-wnba)" data-tip="Alanna Smith (WNBA, Australia) — club 67/116 = 58%, FIBA 11/21 = 52%"/>
+<circle class="pt" cx="280.8" cy="177.4" r="5.8" fill="var(--s-wnba)" data-tip="Ezi Magbegor (WNBA, Australia) — club 73/104 = 70%, FIBA 8/13 = 62%"/>
+<circle class="pt" cx="351.3" cy="101.4" r="6.9" fill="var(--s-wnba)" data-tip="Isobel Borlase (WNBA, Australia) — club 56/61 = 92%, FIBA 28/33 = 85%"/>
+<circle class="pt" cx="291.5" cy="153.9" r="6.0" fill="var(--s-wnba)" data-tip="Jade Melbourne (WNBA, Australia) — club 155/211 = 73%, FIBA 11/16 = 69%"/>
+<circle class="pt" cx="334.5" cy="113.1" r="6.0" fill="var(--s-wnba)" data-tip="Xu Han (WNBA, China) — club 39/45 = 87%, FIBA 13/16 = 81%"/>
+<circle class="pt" cx="300.4" cy="133.5" r="6.3" fill="var(--s-wnba)" data-tip="Sika Koné (WNBA, Mali) — club 32/42 = 76%, FIBA 15/20 = 75%"/>
+<circle class="pt" cx="287.8" cy="140.9" r="5.7" fill="var(--s-wnba)" data-tip="Awak Kuier (WNBA, Finland) — club 34/47 = 72%, FIBA 8/11 = 73%"/>
+<circle class="pt" cx="326.9" cy="128.1" r="6.8" fill="var(--s-wnba)" data-tip="Breanna Stewart (WNBA, USA) — club 479/568 = 84%, FIBA 23/30 = 77%"/>
+<circle class="pt" cx="336.6" cy="133.5" r="5.4" fill="var(--s-wnba)" data-tip="Napheesa Collier (WNBA, USA) — club 206/236 = 87%, FIBA 6/8 = 75%"/>
+<circle class="pt" cx="325.6" cy="81.6" r="5.7" fill="var(--s-wnba)" data-tip="Carla Leite (WNBA, France) — club 308/367 = 84%, FIBA 10/11 = 91%"/>
+<circle class="pt" cx="266.9" cy="196.9" r="6.2" fill="var(--s-ncaa)" data-tip="Alondra Lizama (NCAA, El Salvador) — club 58/88 = 66%, FIBA 10/18 = 56%"/>
+<circle class="pt" cx="305.6" cy="117.2" r="6.3" fill="var(--s-ncaa)" data-tip="Delaney Gibb (NCAA, Canada) — club 196/252 = 78%, FIBA 16/20 = 80%"/>
+<circle class="pt" cx="308.7" cy="152.3" r="5.8" fill="var(--s-ncaa)" data-tip="Yvonne Ejim (NCAA, Canada) — club 152/193 = 79%, FIBA 9/13 = 69%"/>
+<circle class="pt" cx="303.0" cy="145.1" r="5.9" fill="var(--s-ncaa)" data-tip="Victoria Gauna (NCAA, Argentina) — club 77/100 = 77%, FIBA 10/14 = 71%"/>
+<circle class="pt" cx="293.3" cy="76.1" r="6.6" fill="var(--s-ncaa)" data-tip="Bella Nascimento (NCAA, Brazil) — club 57/77 = 74%, FIBA 25/27 = 93%"/>
+<circle class="pt" cx="314.7" cy="153.9" r="6.0" fill="var(--s-ncaa)" data-tip="Catarina Ferreira (NCAA, Brazil) — club 108/134 = 81%, FIBA 11/16 = 69%"/>
+<circle class="pt" cx="264.5" cy="133.5" r="5.8" fill="var(--s-ncaa)" data-tip="Daniela Gonzalez (NCAA, Colombia) — club 118/181 = 65%, FIBA 9/12 = 75%"/>
+<circle class="pt" cx="295.8" cy="110.2" r="6.7" fill="var(--s-ncaa)" data-tip="Trinity San Antonio (NCAA, PuertoRico) — club 92/123 = 75%, FIBA 23/28 = 82%"/>
+<circle class="pt" cx="302.5" cy="259.5" r="5.7" fill="var(--s-ncaa)" data-tip="Zaida Gonzalez (NCAA, PuertoRico) — club 63/82 = 77%, FIBA 4/11 = 36%"/>
+<circle class="pt" cx="285.6" cy="88.2" r="6.2" fill="var(--s-ncaa)" data-tip="Valentina Ojeda (NCAA, Chile) — club 43/60 = 72%, FIBA 16/18 = 89%"/>
+<circle class="pt" cx="327.1" cy="120.6" r="6.2" fill="var(--s-ncaa)" data-tip="Hannah Hidalgo (NCAA, USA) — club 357/423 = 84%, FIBA 15/19 = 79%"/>
+<circle class="pt" cx="252.9" cy="187.8" r="5.8" fill="var(--s-ncaa)" data-tip="Hannah Stuelke (NCAA, USA) — club 196/318 = 62%, FIBA 7/12 = 58%"/>
+<circle class="pt" cx="290.4" cy="138.9" r="6.0" fill="var(--s-ncaa)" data-tip="Joyce Edwards (NCAA, USA) — club 256/350 = 73%, FIBA 11/15 = 73%"/>
+<circle class="pt" cx="315.8" cy="178.8" r="6.2" fill="var(--s-ncaa)" data-tip="Kiki Iriafen (NCAA, USA) — club 140/173 = 81%, FIBA 11/18 = 61%"/>
+<circle class="pt" cx="323.7" cy="81.6" r="5.7" fill="var(--s-ncaa)" data-tip="Madison Booker (NCAA, USA) — club 225/270 = 83%, FIBA 10/11 = 91%"/>
+<circle class="pt" cx="334.3" cy="160.7" r="6.0" fill="var(--s-ncaa)" data-tip="Mikayla Blakes (NCAA, USA) — club 388/448 = 87%, FIBA 10/15 = 67%"/>
+<circle class="pt" cx="339.8" cy="52.0" r="5.7" fill="var(--s-ncaa)" data-tip="Paige Bueckers (NCAA, USA) — club 113/128 = 88%, FIBA 11/11 = 100%"/>
+<circle class="pt" cx="266.1" cy="128.7" r="6.1" fill="var(--s-ncaa)" data-tip="Raegan Beers (NCAA, USA) — club 218/332 = 66%, FIBA 13/17 = 76%"/>
+<circle class="pt" cx="287.8" cy="280.2" r="5.6" fill="var(--s-ncaa)" data-tip="Yirsy Queliz (NCAA, DominicanRepublic) — club 68/94 = 72%, FIBA 3/10 = 30%"/>
+<circle class="pt" cx="328.3" cy="111.3" r="5.7" fill="var(--s-ncaa)" data-tip="Gabriela Jaquez (NCAA, Mexico) — club 128/151 = 85%, FIBA 9/11 = 82%"/>
+<circle class="pt" cx="263.9" cy="168.4" r="6.7" fill="var(--s-ncaa)" data-tip="Mariana Valenzuela (NCAA, Mexico) — club 39/60 = 65%, FIBA 18/28 = 64%"/>
+<circle class="pt" cx="318.3" cy="98.6" r="5.9" fill="var(--s-ncaa)" data-tip="Naomi Panganiban (NCAA, Philippines) — club 156/191 = 82%, FIBA 12/14 = 86%"/>
+<circle class="pt" cx="312.5" cy="64.1" r="6.6" fill="var(--s-ncaa)" data-tip="Sumayah Sugapong (NCAA, Philippines) — club 171/214 = 80%, FIBA 26/27 = 96%"/>
+<circle class="pt" cx="317.8" cy="81.6" r="5.7" fill="var(--s-ncaa)" data-tip="Vanessa De Jesus (NCAA, Philippines) — club 53/65 = 82%, FIBA 10/11 = 91%"/>
+<circle class="pt" cx="296.5" cy="269.3" r="5.5" fill="var(--s-ncaa)" data-tip="Bailey Flavell (NCAA, New Zealand) — club 93/124 = 75%, FIBA 3/9 = 33%"/>
+<circle class="pt" cx="288.1" cy="125.6" r="6.8" fill="var(--s-ncaa)" data-tip="Khadija Faye (NCAA, Senegal) — club 168/232 = 72%, FIBA 24/31 = 77%"/>
+<circle class="pt" cx="292.6" cy="160.7" r="5.5" fill="var(--s-ncaa)" data-tip="Nene Ndiaye (NCAA, Senegal) — club 124/168 = 74%, FIBA 6/9 = 67%"/>
+<circle class="pt" cx="263.9" cy="233.1" r="5.5" fill="var(--s-ncaa)" data-tip="Fatou Diakite (NCAA, Cote d'Ivoire) — club 39/60 = 65%, FIBA 4/9 = 44%"/>
+<circle class="pt" cx="284.9" cy="174.2" r="5.4" fill="var(--s-ncaa)" data-tip="Sira Thienou (NCAA, Mali) — club 95/133 = 71%, FIBA 5/8 = 62%"/>
+<circle class="pt" cx="264.5" cy="263.9" r="7.2" fill="var(--s-ncaa)" data-tip="Maria Gakdeng (NCAA, South Sudan) — club 73/112 = 65%, FIBA 14/40 = 35%"/>
+<circle class="pt" cx="309.6" cy="92.8" r="5.4" fill="var(--s-ncaa)" data-tip="Alexia Dizeko (NCAA, Angola) — club 49/62 = 79%, FIBA 7/8 = 88%"/>
+<circle class="pt" cx="294.0" cy="96.7" r="7.6" fill="var(--s-ncaa)" data-tip="Kiyomi McMiller (NCAA, Nicaragua) — club 95/128 = 74%, FIBA 44/51 = 86%"/>
+<circle class="pt" cx="339.6" cy="81.6" r="5.7" fill="var(--s-ncaa)" data-tip="Alberte Rimdal (NCAA, Denmark) — club 45/51 = 88%, FIBA 10/11 = 91%"/>
+<circle class="pt" cx="293.6" cy="133.5" r="5.4" fill="var(--s-ncaa)" data-tip="Laura Erikstrup (NCAA, Denmark) — club 83/112 = 74%, FIBA 6/8 = 75%"/>
+<circle class="pt" cx="322.1" cy="133.5" r="5.8" fill="var(--s-ncaa)" data-tip="Karyn Sanford (NCAA, Norway) — club 58/70 = 83%, FIBA 9/12 = 75%"/>
+<circle class="pt" cx="306.9" cy="52.0" r="5.8" fill="var(--s-ncaa)" data-tip="Anna Gret Asi (NCAA, Estonia) — club 43/55 = 78%, FIBA 13/13 = 100%"/>
+<circle class="pt" cx="316.5" cy="120.6" r="6.2" fill="var(--s-ncaa)" data-tip="Lia Krumian (NCAA, Armenia) — club 43/53 = 81%, FIBA 15/19 = 79%"/>
+<circle class="pt" cx="298.8" cy="215.0" r="6.0" fill="var(--s-ncaa)" data-tip="Astera Tuhina (NCAA, Kosovo) — club 53/70 = 76%, FIBA 8/16 = 50%"/>
+<circle class="pt" cx="305.3" cy="152.3" r="5.8" fill="var(--s-ncaa)" data-tip="Taylor Jones (NCAA, VirginIslands) — club 108/139 = 78%, FIBA 9/13 = 69%"/>
+<circle class="pt" cx="267.0" cy="117.2" r="6.0" fill="var(--s-ncaa)" data-tip="Antonicia Moultrie (NCAA, Bahamas) — club 31/47 = 66%, FIBA 12/15 = 80%"/>
+<circle class="pt" cx="281.4" cy="127.2" r="6.6" fill="var(--s-ncaa)" data-tip="Rhema Collins (NCAA, Bahamas) — club 171/243 = 70%, FIBA 20/26 = 77%"/>
+<circle class="pt" cx="338.2" cy="83.0" r="6.3" fill="var(--s-ncaa)" data-tip="Anisa Jeffries (NCAA, Mexico) — club 36/41 = 88%, FIBA 19/21 = 90%"/>
+<circle class="pt" cx="307.7" cy="155.7" r="6.4" fill="var(--s-ncaa)" data-tip="Aaliyah Guyton (NCAA, Brazil) — club 40/51 = 78%, FIBA 15/22 = 68%"/>
+<circle class="pt" cx="309.9" cy="168.4" r="6.7" fill="var(--s-ncaa)" data-tip="Lauren Whittaker (NCAA, New Zealand) — club 140/177 = 79%, FIBA 18/28 = 64%"/>
+<circle class="pt" cx="332.2" cy="133.5" r="5.4" fill="var(--s-ncaa)" data-tip="Jasmine Bascoe (NCAA, Canada) — club 159/185 = 86%, FIBA 6/8 = 75%"/>
+<text class="ax" x="215.0" y="424" text-anchor="middle">club rate (%)</text>
+<text class="ax" transform="translate(14,215.0) rotate(-90)" text-anchor="middle">FIBA rate (%)</text>
+</svg></div><div class="scat-wrap" data-stat="two point" ><h4>two point</h4><svg class="chart scat" viewBox="0 0 430 430" role="img" aria-label="Club rate against FIBA rate, one point per player">
+<line class="grid" x1="52.0" y1="378.0" x2="52.0" y2="52.0"/>
+<line class="grid" x1="52.0" y1="378.0" x2="378.0" y2="378.0"/>
+<text class="tick" x="52.0" y="394" text-anchor="middle">0</text>
+<text class="tick" x="44" y="382.0" text-anchor="end">0</text>
+<line class="grid" x1="117.2" y1="378.0" x2="117.2" y2="52.0"/>
+<line class="grid" x1="52.0" y1="312.8" x2="378.0" y2="312.8"/>
+<text class="tick" x="117.2" y="394" text-anchor="middle">20</text>
+<text class="tick" x="44" y="316.8" text-anchor="end">20</text>
+<line class="grid" x1="182.4" y1="378.0" x2="182.4" y2="52.0"/>
+<line class="grid" x1="52.0" y1="247.6" x2="378.0" y2="247.6"/>
+<text class="tick" x="182.4" y="394" text-anchor="middle">40</text>
+<text class="tick" x="44" y="251.6" text-anchor="end">40</text>
+<line class="grid" x1="247.6" y1="378.0" x2="247.6" y2="52.0"/>
+<line class="grid" x1="52.0" y1="182.4" x2="378.0" y2="182.4"/>
+<text class="tick" x="247.6" y="394" text-anchor="middle">60</text>
+<text class="tick" x="44" y="186.4" text-anchor="end">60</text>
+<line class="grid" x1="312.8" y1="378.0" x2="312.8" y2="52.0"/>
+<line class="grid" x1="52.0" y1="117.2" x2="378.0" y2="117.2"/>
+<text class="tick" x="312.8" y="394" text-anchor="middle">80</text>
+<text class="tick" x="44" y="121.2" text-anchor="end">80</text>
+<line class="grid" x1="378.0" y1="378.0" x2="378.0" y2="52.0"/>
+<line class="grid" x1="52.0" y1="52.0" x2="378.0" y2="52.0"/>
+<text class="tick" x="378.0" y="394" text-anchor="middle">100</text>
+<text class="tick" x="44" y="56.0" text-anchor="end">100</text>
+<line class="ident" x1="52.0" y1="378.0" x2="378.0" y2="52.0"/>
+<text class="ident-lab" x="312.8" y="97.6">same rate in both</text>
+<circle class="pt" cx="218.1" cy="238.3" r="7.8" fill="var(--s-wnba)" data-tip="Kennedy Burke (WNBA, Turkey) — club 135/265 = 51%, FIBA 24/56 = 43%"/>
+<circle class="pt" cx="192.4" cy="239.6" r="8.4" fill="var(--s-wnba)" data-tip="Sevgi Uzun (WNBA, Turkey) — club 31/72 = 43%, FIBA 31/73 = 42%"/>
+<circle class="pt" cx="220.9" cy="143.9" r="7.2" fill="var(--s-wnba)" data-tip="Teaira McCowan (WNBA, Turkey) — club 43/83 = 52%, FIBA 28/39 = 72%"/>
+<circle class="pt" cx="227.1" cy="196.9" r="7.7" fill="var(--s-wnba)" data-tip="Dominique Malonga (WNBA, France) — club 368/685 = 54%, FIBA 30/54 = 56%"/>
+<circle class="pt" cx="200.9" cy="195.1" r="7.3" fill="var(--s-wnba)" data-tip="Gabby Williams (WNBA, France) — club 354/775 = 46%, FIBA 23/41 = 56%"/>
+<circle class="pt" cx="192.6" cy="167.1" r="6.1" fill="var(--s-wnba)" data-tip="Iliana Rupert (WNBA, France) — club 22/51 = 43%, FIBA 11/17 = 65%"/>
+<circle class="pt" cx="200.1" cy="138.3" r="7.0" fill="var(--s-wnba)" data-tip="Janelle Salaün (WNBA, France) — club 169/372 = 45%, FIBA 25/34 = 74%"/>
+<circle class="pt" cx="222.2" cy="180.7" r="7.1" fill="var(--s-wnba)" data-tip="Leïla Lacan (WNBA, France) — club 188/360 = 52%, FIBA 23/38 = 61%"/>
+<circle class="pt" cx="223.7" cy="133.5" r="5.8" fill="var(--s-wnba)" data-tip="Marine Johannes (WNBA, France) — club 69/131 = 53%, FIBA 9/12 = 75%"/>
+<circle class="pt" cx="242.5" cy="220.6" r="6.7" fill="var(--s-wnba)" data-tip="Pauline Astier (WNBA, France) — club 149/255 = 58%, FIBA 14/29 = 48%"/>
+<circle class="pt" cx="199.4" cy="209.7" r="6.8" fill="var(--s-wnba)" data-tip="Valeriane Ayayi (WNBA, France) — club 33/73 = 45%, FIBA 16/31 = 52%"/>
+<circle class="pt" cx="246.2" cy="142.2" r="7.5" fill="var(--s-wnba)" data-tip="Jessica Shepard (WNBA, Slovenia) — club 408/685 = 60%, FIBA 34/47 = 72%"/>
+<circle class="pt" cx="198.9" cy="195.4" r="6.5" fill="var(--s-wnba)" data-tip="Teja Oblak (WNBA, Slovenia) — club 41/91 = 45%, FIBA 14/25 = 56%"/>
+<circle class="pt" cx="231.9" cy="241.5" r="7.3" fill="var(--s-wnba)" data-tip="Laura Juskaite (WNBA, Lithuania) — club 133/241 = 55%, FIBA 18/43 = 42%"/>
+<circle class="pt" cx="234.2" cy="215.0" r="5.9" fill="var(--s-wnba)" data-tip="Angela Dugalic (WNBA, Serbia) — club 38/68 = 56%, FIBA 7/14 = 50%"/>
+<circle class="pt" cx="188.5" cy="227.5" r="6.6" fill="var(--s-wnba)" data-tip="Jovana Nogic (WNBA, Serbia) — club 18/43 = 42%, FIBA 12/26 = 46%"/>
+<circle class="pt" cx="198.5" cy="205.1" r="8.1" fill="var(--s-wnba)" data-tip="Cecilia Zandalasini (WNBA, Italy) — club 124/276 = 45%, FIBA 35/66 = 53%"/>
+<circle class="pt" cx="254.3" cy="225.9" r="6.8" fill="var(--s-wnba)" data-tip="Holly Winterburn (WNBA, GreatBritain) — club 36/58 = 62%, FIBA 14/30 = 47%"/>
+<circle class="pt" cx="243.1" cy="178.8" r="7.1" fill="var(--s-wnba)" data-tip="Temi Fagbenle (WNBA, GreatBritain) — club 170/290 = 59%, FIBA 22/36 = 61%"/>
+<circle class="pt" cx="224.6" cy="212.3" r="8.0" fill="var(--s-wnba)" data-tip="Awa Fam (WNBA, Spain) — club 90/170 = 53%, FIBA 31/61 = 51%"/>
+<circle class="pt" cx="176.1" cy="228.2" r="7.1" fill="var(--s-wnba)" data-tip="Maria Conde (WNBA, Spain) — club 51/134 = 38%, FIBA 17/37 = 46%"/>
+<circle class="pt" cx="266.0" cy="193.3" r="7.9" fill="var(--s-wnba)" data-tip="Megan Gustafson (WNBA, Spain) — club 172/262 = 66%, FIBA 34/60 = 57%"/>
+<circle class="pt" cx="251.6" cy="171.5" r="6.8" fill="var(--s-wnba)" data-tip="Natasha Mack (WNBA, Montenegro) — club 232/379 = 61%, FIBA 19/30 = 63%"/>
+<circle class="pt" cx="221.7" cy="185.9" r="7.8" fill="var(--s-wnba)" data-tip="Frieda Buhner (WNBA, Germany) — club 51/98 = 52%, FIBA 33/56 = 59%"/>
+<circle class="pt" cx="225.5" cy="255.8" r="7.2" fill="var(--s-wnba)" data-tip="Leonie Fiebich (WNBA, Germany) — club 91/171 = 53%, FIBA 15/40 = 38%"/>
+<circle class="pt" cx="205.4" cy="202.5" r="8.1" fill="var(--s-wnba)" data-tip="Luisa Geiselsoder (WNBA, Germany) — club 64/136 = 47%, FIBA 35/65 = 54%"/>
+<circle class="pt" cx="228.2" cy="215.0" r="7.8" fill="var(--s-wnba)" data-tip="Nyara Sabally (WNBA, Germany) — club 127/235 = 54%, FIBA 28/56 = 50%"/>
+<circle class="pt" cx="224.5" cy="204.4" r="8.9" fill="var(--s-wnba)" data-tip="Emma Meesseman (WNBA, Belgium) — club 82/155 = 53%, FIBA 49/92 = 53%"/>
+<circle class="pt" cx="292.7" cy="167.1" r="6.1" fill="var(--s-wnba)" data-tip="Julie Allemand (WNBA, Belgium) — club 79/107 = 74%, FIBA 11/17 = 65%"/>
+<circle class="pt" cx="220.1" cy="174.2" r="7.2" fill="var(--s-wnba)" data-tip="Aaliyah Edwards (WNBA, Canada) — club 197/382 = 52%, FIBA 25/40 = 62%"/>
+<circle class="pt" cx="202.5" cy="219.4" r="7.1" fill="var(--s-wnba)" data-tip="Bridget Carleton (WNBA, Canada) — club 133/288 = 46%, FIBA 18/37 = 49%"/>
+<circle class="pt" cx="172.7" cy="327.8" r="5.8" fill="var(--s-wnba)" data-tip="Kia Nurse (WNBA, Canada) — club 67/181 = 37%, FIBA 2/13 = 15%"/>
+<circle class="pt" cx="199.3" cy="212.1" r="7.8" fill="var(--s-wnba)" data-tip="Damiris Dantas (WNBA, Brazil) — club 47/104 = 45%, FIBA 29/57 = 51%"/>
+<circle class="pt" cx="228.0" cy="233.8" r="7.7" fill="var(--s-wnba)" data-tip="Kamilla Cardoso (WNBA, Brazil) — club 479/887 = 54%, FIBA 23/52 = 44%"/>
+<circle class="pt" cx="206.8" cy="190.6" r="7.2" fill="var(--s-wnba)" data-tip="Angel Reese (WNBA, USA) — club 454/956 = 47%, FIBA 23/40 = 57%"/>
+<circle class="pt" cx="220.1" cy="160.7" r="6.3" fill="var(--s-wnba)" data-tip="Caitlin Clark (WNBA, USA) — club 230/446 = 52%, FIBA 14/21 = 67%"/>
+<circle class="pt" cx="213.0" cy="184.8" r="6.6" fill="var(--s-wnba)" data-tip="Chelsea Gray (WNBA, USA) — club 286/579 = 49%, FIBA 16/27 = 59%"/>
+<circle class="pt" cx="245.9" cy="145.1" r="6.3" fill="var(--s-wnba)" data-tip="Dearica Hamby (WNBA, USA) — club 537/903 = 59%, FIBA 15/21 = 71%"/>
+<circle class="pt" cx="203.2" cy="235.4" r="6.0" fill="var(--s-wnba)" data-tip="Flau'jae Johnson (WNBA, USA) — club 167/360 = 46%, FIBA 7/16 = 44%"/>
+<circle class="pt" cx="215.0" cy="187.8" r="5.8" fill="var(--s-wnba)" data-tip="Gianna Kneepkens (WNBA, USA) — club 32/64 = 50%, FIBA 7/12 = 58%"/>
+<circle class="pt" cx="234.2" cy="194.6" r="7.5" fill="var(--s-wnba)" data-tip="Jackie Young (WNBA, USA) — club 479/857 = 56%, FIBA 27/48 = 56%"/>
+<circle class="pt" cx="218.7" cy="190.6" r="7.2" fill="var(--s-wnba)" data-tip="Kahleah Copper (WNBA, USA) — club 387/757 = 51%, FIBA 23/40 = 57%"/>
+<circle class="pt" cx="221.0" cy="182.4" r="6.0" fill="var(--s-wnba)" data-tip="Kelsey Plum (WNBA, USA) — club 253/488 = 52%, FIBA 9/15 = 60%"/>
+<circle class="pt" cx="218.9" cy="191.7" r="6.7" fill="var(--s-wnba)" data-tip="Kiki Iriafen (WNBA, USA) — club 467/912 = 51%, FIBA 16/28 = 57%"/>
+<circle class="pt" cx="226.6" cy="176.2" r="6.3" fill="var(--s-wnba)" data-tip="Monique Billings (WNBA, USA) — club 173/323 = 54%, FIBA 13/21 = 62%"/>
+<circle class="pt" cx="221.8" cy="153.9" r="6.0" fill="var(--s-wnba)" data-tip="Olivia Miles (WNBA, USA) — club 224/430 = 52%, FIBA 11/16 = 69%"/>
+<circle class="pt" cx="225.2" cy="196.0" r="7.3" fill="var(--s-wnba)" data-tip="Paige Bueckers (WNBA, USA) — club 493/928 = 53%, FIBA 24/43 = 56%"/>
+<circle class="pt" cx="217.6" cy="238.3" r="5.9" fill="var(--s-wnba)" data-tip="Raegan Beers (WNBA, USA) — club 63/124 = 51%, FIBA 6/14 = 43%"/>
+<circle class="pt" cx="201.1" cy="215.0" r="5.6" fill="var(--s-wnba)" data-tip="Rhyne Howard (WNBA, USA) — club 246/538 = 46%, FIBA 5/10 = 50%"/>
+<circle class="pt" cx="219.8" cy="271.7" r="7.5" fill="var(--s-wnba)" data-tip="Gabriela Jaquez (WNBA, Mexico) — club 88/171 = 51%, FIBA 15/46 = 33%"/>
+<circle class="pt" cx="256.9" cy="191.7" r="7.3" fill="var(--s-wnba)" data-tip="Alanna Smith (WNBA, Australia) — club 186/296 = 63%, FIBA 24/42 = 57%"/>
+<circle class="pt" cx="220.7" cy="173.5" r="7.6" fill="var(--s-wnba)" data-tip="Ezi Magbegor (WNBA, Australia) — club 163/315 = 52%, FIBA 32/51 = 63%"/>
+<circle class="pt" cx="213.0" cy="212.0" r="7.8" fill="var(--s-wnba)" data-tip="Isobel Borlase (WNBA, Australia) — club 80/162 = 49%, FIBA 28/55 = 51%"/>
+<circle class="pt" cx="213.5" cy="221.5" r="6.5" fill="var(--s-wnba)" data-tip="Jade Melbourne (WNBA, Australia) — club 162/327 = 50%, FIBA 12/25 = 48%"/>
+<circle class="pt" cx="236.6" cy="198.5" r="8.8" fill="var(--s-wnba)" data-tip="Xu Han (WNBA, China) — club 77/136 = 57%, FIBA 49/89 = 55%"/>
+<circle class="pt" cx="247.6" cy="196.9" r="7.1" fill="var(--s-wnba)" data-tip="Amy Okonkwo (WNBA, Nigeria) — club 30/50 = 60%, FIBA 20/36 = 56%"/>
+<circle class="pt" cx="198.7" cy="200.2" r="8.1" fill="var(--s-wnba)" data-tip="Sika Koné (WNBA, Mali) — club 27/60 = 45%, FIBA 36/66 = 55%"/>
+<circle class="pt" cx="202.8" cy="163.8" r="7.0" fill="var(--s-wnba)" data-tip="Kitija Laksa (WNBA, Latvia) — club 31/67 = 46%, FIBA 23/35 = 66%"/>
+<circle class="pt" cx="249.3" cy="177.4" r="5.8" fill="var(--s-wnba)" data-tip="Awak Kuier (WNBA, Finland) — club 69/114 = 61%, FIBA 8/13 = 62%"/>
+<circle class="pt" cx="231.3" cy="244.6" r="6.4" fill="var(--s-wnba)" data-tip="Aliyah Boston (WNBA, USA) — club 544/989 = 55%, FIBA 9/22 = 41%"/>
+<circle class="pt" cx="224.0" cy="189.3" r="7.1" fill="var(--s-wnba)" data-tip="Breanna Stewart (WNBA, USA) — club 504/955 = 53%, FIBA 22/38 = 58%"/>
+<circle class="pt" cx="233.8" cy="164.4" r="6.7" fill="var(--s-wnba)" data-tip="Napheesa Collier (WNBA, USA) — club 363/651 = 56%, FIBA 19/29 = 66%"/>
+<circle class="pt" cx="223.0" cy="170.5" r="5.7" fill="var(--s-wnba)" data-tip="Sonia Citron (WNBA, USA) — club 319/608 = 52%, FIBA 7/11 = 64%"/>
+<circle class="pt" cx="222.8" cy="196.9" r="5.5" fill="var(--s-ncaa)" data-tip="Elena Bosgana (NCAA, Greece) — club 88/168 = 52%, FIBA 5/9 = 56%"/>
+<circle class="pt" cx="196.0" cy="133.5" r="5.4" fill="var(--s-ncaa)" data-tip="Ioanna Krimili (NCAA, Greece) — club 57/129 = 44%, FIBA 6/8 = 75%"/>
+<circle class="pt" cx="195.2" cy="215.0" r="5.4" fill="var(--s-ncaa)" data-tip="Lana Wenger (NCAA, Switzerland) — club 58/132 = 44%, FIBA 4/8 = 50%"/>
+<circle class="pt" cx="189.6" cy="215.0" r="6.6" fill="var(--s-ncaa)" data-tip="Viktoria Ranisavljevic (NCAA, Switzerland) — club 19/45 = 42%, FIBA 13/26 = 50%"/>
+<circle class="pt" cx="227.9" cy="215.0" r="5.9" fill="var(--s-ncaa)" data-tip="Angela Dugalic (NCAA, Serbia) — club 170/315 = 54%, FIBA 7/14 = 50%"/>
+<circle class="pt" cx="149.5" cy="196.9" r="6.2" fill="var(--s-ncaa)" data-tip="Mina Djordjevic (NCAA, Serbia) — club 32/107 = 30%, FIBA 10/18 = 56%"/>
+<circle class="pt" cx="220.4" cy="280.2" r="5.6" fill="var(--s-ncaa)" data-tip="Matilda Ekh (NCAA, Sweden) — club 78/151 = 52%, FIBA 3/10 = 30%"/>
+<circle class="pt" cx="251.7" cy="243.8" r="6.1" fill="var(--s-ncaa)" data-tip="Nastja Claessens (NCAA, Belgium) — club 117/191 = 61%, FIBA 7/17 = 41%"/>
+<circle class="pt" cx="222.1" cy="219.7" r="7.0" fill="var(--s-ncaa)" data-tip="Alondra Lizama (NCAA, El Salvador) — club 60/115 = 52%, FIBA 17/35 = 49%"/>
+<circle class="pt" cx="206.3" cy="254.8" r="7.4" fill="var(--s-ncaa)" data-tip="Delaney Gibb (NCAA, Canada) — club 212/448 = 47%, FIBA 17/45 = 38%"/>
+<circle class="pt" cx="215.8" cy="255.8" r="5.4" fill="var(--s-ncaa)" data-tip="Phillipina Kyei (NCAA, Canada) — club 106/211 = 50%, FIBA 3/8 = 38%"/>
+<circle class="pt" cx="166.5" cy="337.2" r="6.9" fill="var(--s-ncaa)" data-tip="Shayeann Day-Wilson (NCAA, Canada) — club 26/74 = 35%, FIBA 4/32 = 12%"/>
+<circle class="pt" cx="210.6" cy="242.2" r="7.5" fill="var(--s-ncaa)" data-tip="Syla Swords (NCAA, Canada) — club 215/442 = 49%, FIBA 20/48 = 42%"/>
+<circle class="pt" cx="213.7" cy="259.5" r="5.7" fill="var(--s-ncaa)" data-tip="Tara Wallack (NCAA, Canada) — club 123/248 = 50%, FIBA 4/11 = 36%"/>
+<circle class="pt" cx="232.9" cy="225.2" r="6.9" fill="var(--s-ncaa)" data-tip="Yvonne Ejim (NCAA, Canada) — club 268/483 = 55%, FIBA 15/32 = 47%"/>
+<circle class="pt" cx="182.1" cy="264.3" r="7.3" fill="var(--s-ncaa)" data-tip="Victoria Gauna (NCAA, Argentina) — club 101/253 = 40%, FIBA 15/43 = 35%"/>
+<circle class="pt" cx="206.8" cy="247.6" r="5.6" fill="var(--s-ncaa)" data-tip="Ayla McDowell (NCAA, Brazil) — club 19/40 = 48%, FIBA 4/10 = 40%"/>
+<circle class="pt" cx="194.4" cy="263.5" r="7.1" fill="var(--s-ncaa)" data-tip="Bella Nascimento (NCAA, Brazil) — club 169/387 = 44%, FIBA 13/37 = 35%"/>
+<circle class="pt" cx="187.0" cy="261.6" r="5.9" fill="var(--s-ncaa)" data-tip="Catarina Ferreira (NCAA, Brazil) — club 82/198 = 41%, FIBA 5/14 = 36%"/>
+<circle class="pt" cx="124.4" cy="287.4" r="6.2" fill="var(--s-ncaa)" data-tip="Carolina Lopez (NCAA, Colombia) — club 10/45 = 22%, FIBA 5/18 = 28%"/>
+<circle class="pt" cx="182.9" cy="305.6" r="6.2" fill="var(--s-ncaa)" data-tip="Daniela Gonzalez (NCAA, Colombia) — club 116/289 = 40%, FIBA 4/18 = 22%"/>
+<circle class="pt" cx="159.7" cy="287.4" r="6.2" fill="var(--s-ncaa)" data-tip="Angelica Velez (NCAA, PuertoRico) — club 38/115 = 33%, FIBA 5/18 = 28%"/>
+<circle class="pt" cx="220.8" cy="241.0" r="8.2" fill="var(--s-ncaa)" data-tip="Trinity San Antonio (NCAA, PuertoRico) — club 190/367 = 52%, FIBA 29/69 = 42%"/>
+<circle class="pt" cx="187.8" cy="244.9" r="7.6" fill="var(--s-ncaa)" data-tip="Zaida Gonzalez (NCAA, PuertoRico) — club 140/336 = 42%, FIBA 20/49 = 41%"/>
+<circle class="pt" cx="240.7" cy="251.8" r="6.8" fill="var(--s-ncaa)" data-tip="Valentina Ojeda (NCAA, Chile) — club 77/133 = 58%, FIBA 12/31 = 39%"/>
+<circle class="pt" cx="260.0" cy="215.0" r="6.0" fill="var(--s-ncaa)" data-tip="Audi Crooks (NCAA, USA) — club 647/1014 = 64%, FIBA 8/16 = 50%"/>
+<circle class="pt" cx="212.7" cy="235.4" r="6.0" fill="var(--s-ncaa)" data-tip="Flaujae Johnson (NCAA, USA) — club 320/649 = 49%, FIBA 7/16 = 44%"/>
+<circle class="pt" cx="237.7" cy="187.8" r="5.8" fill="var(--s-ncaa)" data-tip="Gianna Kneepkens (NCAA, USA) — club 188/330 = 57%, FIBA 7/12 = 58%"/>
+<circle class="pt" cx="218.1" cy="221.0" r="6.6" fill="var(--s-ncaa)" data-tip="Grace VanSlooten (NCAA, USA) — club 381/748 = 51%, FIBA 13/27 = 48%"/>
+<circle class="pt" cx="218.8" cy="222.1" r="7.5" fill="var(--s-ncaa)" data-tip="Hannah Hidalgo (NCAA, USA) — club 508/993 = 51%, FIBA 22/46 = 48%"/>
+<circle class="pt" cx="226.2" cy="138.9" r="6.0" fill="var(--s-ncaa)" data-tip="Hannah Stuelke (NCAA, USA) — club 312/584 = 53%, FIBA 11/15 = 73%"/>
+<circle class="pt" cx="234.2" cy="256.9" r="7.0" fill="var(--s-ncaa)" data-tip="Joyce Edwards (NCAA, USA) — club 498/891 = 56%, FIBA 13/35 = 37%"/>
+<circle class="pt" cx="206.5" cy="215.0" r="5.4" fill="var(--s-ncaa)" data-tip="Kennedy Smith (NCAA, USA) — club 209/441 = 47%, FIBA 4/8 = 50%"/>
+<circle class="pt" cx="214.7" cy="191.7" r="6.7" fill="var(--s-ncaa)" data-tip="Kiki Iriafen (NCAA, USA) — club 238/477 = 50%, FIBA 16/28 = 57%"/>
+<circle class="pt" cx="217.7" cy="231.9" r="6.7" fill="var(--s-ncaa)" data-tip="Madison Booker (NCAA, USA) — club 484/952 = 51%, FIBA 13/29 = 45%"/>
+<circle class="pt" cx="222.5" cy="215.0" r="7.2" fill="var(--s-ncaa)" data-tip="Mikayla Blakes (NCAA, USA) — club 388/742 = 52%, FIBA 20/40 = 50%"/>
+<circle class="pt" cx="233.6" cy="153.9" r="6.0" fill="var(--s-ncaa)" data-tip="Olivia Miles (NCAA, USA) — club 303/544 = 56%, FIBA 11/16 = 69%"/>
+<circle class="pt" cx="243.3" cy="196.0" r="7.3" fill="var(--s-ncaa)" data-tip="Paige Bueckers (NCAA, USA) — club 216/368 = 59%, FIBA 24/43 = 56%"/>
+<circle class="pt" cx="266.8" cy="238.3" r="5.9" fill="var(--s-ncaa)" data-tip="Raegan Beers (NCAA, USA) — club 419/636 = 66%, FIBA 6/14 = 43%"/>
+<circle class="pt" cx="173.2" cy="273.2" r="6.7" fill="var(--s-ncaa)" data-tip="Yirsy Queliz (NCAA, DominicanRepublic) — club 119/320 = 37%, FIBA 9/28 = 32%"/>
+<circle class="pt" cx="252.7" cy="271.7" r="7.5" fill="var(--s-ncaa)" data-tip="Gabriela Jaquez (NCAA, Mexico) — club 245/398 = 62%, FIBA 15/46 = 33%"/>
+<circle class="pt" cx="228.1" cy="212.5" r="8.1" fill="var(--s-ncaa)" data-tip="Mariana Valenzuela (NCAA, Mexico) — club 101/187 = 54%, FIBA 33/65 = 51%"/>
+<circle class="pt" cx="194.1" cy="229.8" r="6.9" fill="var(--s-ncaa)" data-tip="Naomi Panganiban (NCAA, Philippines) — club 180/413 = 44%, FIBA 15/33 = 45%"/>
+<circle class="pt" cx="175.4" cy="278.4" r="7.1" fill="var(--s-ncaa)" data-tip="Sumayah Sugapong (NCAA, Philippines) — club 218/576 = 38%, FIBA 11/36 = 31%"/>
+<circle class="pt" cx="199.2" cy="243.1" r="7.9" fill="var(--s-ncaa)" data-tip="Vanessa De Jesus (NCAA, Philippines) — club 79/175 = 45%, FIBA 24/58 = 41%"/>
+<circle class="pt" cx="189.8" cy="215.0" r="6.0" fill="var(--s-ncaa)" data-tip="Bailey Flavell (NCAA, New Zealand) — club 93/220 = 42%, FIBA 8/16 = 50%"/>
+<circle class="pt" cx="183.5" cy="378.0" r="5.4" fill="var(--s-ncaa)" data-tip="Olivia Williams (NCAA, New Zealand) — club 25/62 = 40%, FIBA 0/8 = 0%"/>
+<circle class="pt" cx="219.8" cy="275.1" r="6.2" fill="var(--s-ncaa)" data-tip="Ritorya Tamilo (NCAA, New Zealand) — club 139/270 = 51%, FIBA 6/19 = 32%"/>
+<circle class="pt" cx="198.5" cy="276.1" r="6.9" fill="var(--s-ncaa)" data-tip="Tayla Dalton (NCAA, New Zealand) — club 31/69 = 45%, FIBA 10/32 = 31%"/>
+<circle class="pt" cx="207.3" cy="245.0" r="8.4" fill="var(--s-ncaa)" data-tip="Khadija Faye (NCAA, Senegal) — club 203/426 = 48%, FIBA 31/76 = 41%"/>
+<circle class="pt" cx="201.8" cy="253.8" r="6.3" fill="var(--s-ncaa)" data-tip="Nene Ndiaye (NCAA, Senegal) — club 131/285 = 46%, FIBA 8/21 = 38%"/>
+<circle class="pt" cx="211.6" cy="305.6" r="7.1" fill="var(--s-ncaa)" data-tip="Sabou Gueye (NCAA, Senegal) — club 331/676 = 49%, FIBA 8/36 = 22%"/>
+<circle class="pt" cx="210.7" cy="187.8" r="5.8" fill="var(--s-ncaa)" data-tip="Fatou Diakite (NCAA, Cote d'Ivoire) — club 74/152 = 49%, FIBA 7/12 = 58%"/>
+<circle class="pt" cx="206.8" cy="206.4" r="6.2" fill="var(--s-ncaa)" data-tip="Sira Thienou (NCAA, Mali) — club 179/377 = 47%, FIBA 10/19 = 53%"/>
+<circle class="pt" cx="241.7" cy="178.5" r="8.2" fill="var(--s-ncaa)" data-tip="Maria Gakdeng (NCAA, South Sudan) — club 142/244 = 58%, FIBA 41/67 = 61%"/>
+<circle class="pt" cx="229.3" cy="247.6" r="6.3" fill="var(--s-ncaa)" data-tip="Alexia Dizeko (NCAA, Angola) — club 99/182 = 54%, FIBA 8/20 = 40%"/>
+<circle class="pt" cx="179.7" cy="300.4" r="6.3" fill="var(--s-ncaa)" data-tip="Delma Zita (NCAA, Mozambique) — club 96/245 = 39%, FIBA 5/21 = 24%"/>
+<circle class="pt" cx="235.1" cy="296.5" r="5.8" fill="var(--s-ncaa)" data-tip="Hulda Joaquim (NCAA, Mozambique) — club 100/178 = 56%, FIBA 3/12 = 25%"/>
+<circle class="pt" cx="206.8" cy="352.9" r="5.8" fill="var(--s-ncaa)" data-tip="Marypaz Martinez (NCAA, CostaRica) — club 19/40 = 48%, FIBA 1/13 = 8%"/>
+<circle class="pt" cx="203.6" cy="218.6" r="9.0" fill="var(--s-ncaa)" data-tip="Kiyomi McMiller (NCAA, Nicaragua) — club 331/712 = 46%, FIBA 89/182 = 49%"/>
+<circle class="pt" cx="187.2" cy="259.5" r="5.7" fill="var(--s-ncaa)" data-tip="Milan Tuttle (NCAA, Panama) — club 17/41 = 41%, FIBA 4/11 = 36%"/>
+<circle class="pt" cx="215.0" cy="219.0" r="7.3" fill="var(--s-ncaa)" data-tip="Alberte Rimdal (NCAA, Denmark) — club 56/112 = 50%, FIBA 20/41 = 49%"/>
+<circle class="pt" cx="191.7" cy="235.9" r="7.2" fill="var(--s-ncaa)" data-tip="Frida Formann (NCAA, Denmark) — club 33/77 = 43%, FIBA 17/39 = 44%"/>
+<circle class="pt" cx="260.4" cy="215.0" r="6.0" fill="var(--s-ncaa)" data-tip="Laura Erikstrup (NCAA, Denmark) — club 195/305 = 64%, FIBA 8/16 = 50%"/>
+<circle class="pt" cx="197.3" cy="247.6" r="6.8" fill="var(--s-ncaa)" data-tip="Karyn Sanford (NCAA, Norway) — club 78/175 = 45%, FIBA 12/30 = 40%"/>
+<circle class="pt" cx="209.2" cy="234.9" r="7.3" fill="var(--s-ncaa)" data-tip="Anna Gret Asi (NCAA, Estonia) — club 54/112 = 48%, FIBA 18/41 = 44%"/>
+<circle class="pt" cx="230.6" cy="224.6" r="6.1" fill="var(--s-ncaa)" data-tip="Johanna Teder (NCAA, Estonia) — club 40/73 = 55%, FIBA 8/17 = 47%"/>
+<circle class="pt" cx="205.4" cy="276.1" r="6.0" fill="var(--s-ncaa)" data-tip="Keandra Koorits (NCAA, Estonia) — club 64/136 = 47%, FIBA 5/16 = 31%"/>
+<circle class="pt" cx="197.7" cy="202.5" r="5.8" fill="var(--s-ncaa)" data-tip="Hennie Van Schaik (NCAA, Netherlands) — club 38/85 = 45%, FIBA 7/13 = 54%"/>
+<circle class="pt" cx="206.0" cy="251.2" r="6.2" fill="var(--s-ncaa)" data-tip="Maud Huijbens (NCAA, Netherlands) — club 94/199 = 47%, FIBA 7/18 = 39%"/>
+<circle class="pt" cx="192.9" cy="133.5" r="5.4" fill="var(--s-ncaa)" data-tip="Sigrun Olafsdottir (NCAA, Iceland) — club 35/81 = 43%, FIBA 6/8 = 75%"/>
+<circle class="pt" cx="232.8" cy="190.3" r="6.9" fill="var(--s-ncaa)" data-tip="Danika Galea (NCAA, Malta) — club 61/110 = 55%, FIBA 19/33 = 58%"/>
+<circle class="pt" cx="159.1" cy="291.1" r="6.0" fill="var(--s-ncaa)" data-tip="Ava O'Neil (NCAA, Armenia) — club 45/137 = 33%, FIBA 4/15 = 27%"/>
+<circle class="pt" cx="187.2" cy="273.2" r="6.7" fill="var(--s-ncaa)" data-tip="Lia Krumian (NCAA, Armenia) — club 102/246 = 41%, FIBA 9/28 = 32%"/>
+<circle class="pt" cx="188.3" cy="186.9" r="6.7" fill="var(--s-ncaa)" data-tip="Astera Tuhina (NCAA, Kosovo) — club 79/189 = 42%, FIBA 17/29 = 59%"/>
+<circle class="pt" cx="197.7" cy="305.6" r="5.5" fill="var(--s-ncaa)" data-tip="Franchesca Torres (NCAA, PuertoRico) — club 21/47 = 45%, FIBA 2/9 = 22%"/>
+<circle class="pt" cx="237.1" cy="200.2" r="6.4" fill="var(--s-ncaa)" data-tip="Taylor Jones (NCAA, VirginIslands) — club 176/310 = 57%, FIBA 12/22 = 55%"/>
+<circle class="pt" cx="239.9" cy="165.4" r="6.4" fill="var(--s-ncaa)" data-tip="Antonicia Moultrie (NCAA, Bahamas) — club 34/59 = 58%, FIBA 15/23 = 65%"/>
+<circle class="pt" cx="209.3" cy="227.2" r="8.2" fill="var(--s-ncaa)" data-tip="Rhema Collins (NCAA, Bahamas) — club 181/375 = 48%, FIBA 31/67 = 46%"/>
+<circle class="pt" cx="225.4" cy="232.3" r="7.5" fill="var(--s-ncaa)" data-tip="Anisa Jeffries (NCAA, Mexico) — club 83/156 = 53%, FIBA 21/47 = 45%"/>
+<circle class="pt" cx="183.8" cy="280.2" r="5.6" fill="var(--s-ncaa)" data-tip="Morelia Chavez (NCAA, Mexico) — club 19/47 = 40%, FIBA 3/10 = 30%"/>
+<circle class="pt" cx="183.0" cy="224.6" r="6.1" fill="var(--s-ncaa)" data-tip="Sol Castro (NCAA, Argentina) — club 41/102 = 40%, FIBA 8/17 = 47%"/>
+<circle class="pt" cx="179.0" cy="215.0" r="7.3" fill="var(--s-ncaa)" data-tip="Aaliyah Guyton (NCAA, Brazil) — club 60/154 = 39%, FIBA 21/42 = 50%"/>
+<circle class="pt" cx="226.9" cy="215.0" r="6.2" fill="var(--s-ncaa)" data-tip="Heloisa Carrera (NCAA, Brazil) — club 162/302 = 54%, FIBA 9/18 = 50%"/>
+<circle class="pt" cx="233.5" cy="269.3" r="5.5" fill="var(--s-ncaa)" data-tip="Lety Vasconcelos (NCAA, Brazil) — club 49/88 = 56%, FIBA 3/9 = 33%"/>
+<circle class="pt" cx="242.2" cy="238.3" r="7.0" fill="var(--s-ncaa)" data-tip="Lauren Whittaker (NCAA, New Zealand) — club 206/353 = 58%, FIBA 15/35 = 43%"/>
+<circle class="pt" cx="239.0" cy="155.7" r="6.4" fill="var(--s-ncaa)" data-tip="Agot Makeer (NCAA, Canada) — club 74/129 = 57%, FIBA 15/22 = 68%"/>
+<circle class="pt" cx="206.3" cy="233.1" r="6.6" fill="var(--s-ncaa)" data-tip="Jasmine Bascoe (NCAA, Canada) — club 337/712 = 47%, FIBA 12/27 = 44%"/>
+<circle class="pt" cx="232.9" cy="170.5" r="5.7" fill="var(--s-ncaa)" data-tip="Sonia Citron (NCAA, USA) — club 116/209 = 56%, FIBA 7/11 = 64%"/>
+<text class="ax" x="215.0" y="424" text-anchor="middle">club rate (%)</text>
+<text class="ax" transform="translate(14,215.0) rotate(-90)" text-anchor="middle">FIBA rate (%)</text>
+</svg></div><div class="scat-wrap" data-stat="three point" hidden><h4>three point</h4><svg class="chart scat" viewBox="0 0 430 430" role="img" aria-label="Club rate against FIBA rate, one point per player">
+<line class="grid" x1="52.0" y1="378.0" x2="52.0" y2="52.0"/>
+<line class="grid" x1="52.0" y1="378.0" x2="378.0" y2="378.0"/>
+<text class="tick" x="52.0" y="394" text-anchor="middle">0</text>
+<text class="tick" x="44" y="382.0" text-anchor="end">0</text>
+<line class="grid" x1="117.2" y1="378.0" x2="117.2" y2="52.0"/>
+<line class="grid" x1="52.0" y1="312.8" x2="378.0" y2="312.8"/>
+<text class="tick" x="117.2" y="394" text-anchor="middle">20</text>
+<text class="tick" x="44" y="316.8" text-anchor="end">20</text>
+<line class="grid" x1="182.4" y1="378.0" x2="182.4" y2="52.0"/>
+<line class="grid" x1="52.0" y1="247.6" x2="378.0" y2="247.6"/>
+<text class="tick" x="182.4" y="394" text-anchor="middle">40</text>
+<text class="tick" x="44" y="251.6" text-anchor="end">40</text>
+<line class="grid" x1="247.6" y1="378.0" x2="247.6" y2="52.0"/>
+<line class="grid" x1="52.0" y1="182.4" x2="378.0" y2="182.4"/>
+<text class="tick" x="247.6" y="394" text-anchor="middle">60</text>
+<text class="tick" x="44" y="186.4" text-anchor="end">60</text>
+<line class="grid" x1="312.8" y1="378.0" x2="312.8" y2="52.0"/>
+<line class="grid" x1="52.0" y1="117.2" x2="378.0" y2="117.2"/>
+<text class="tick" x="312.8" y="394" text-anchor="middle">80</text>
+<text class="tick" x="44" y="121.2" text-anchor="end">80</text>
+<line class="grid" x1="378.0" y1="378.0" x2="378.0" y2="52.0"/>
+<line class="grid" x1="52.0" y1="52.0" x2="378.0" y2="52.0"/>
+<text class="tick" x="378.0" y="394" text-anchor="middle">100</text>
+<text class="tick" x="44" y="56.0" text-anchor="end">100</text>
+<line class="ident" x1="52.0" y1="378.0" x2="378.0" y2="52.0"/>
+<text class="ident-lab" x="312.8" y="97.6">same rate in both</text>
+<circle class="pt" cx="166.6" cy="291.1" r="7.4" fill="var(--s-wnba)" data-tip="Kennedy Burke (WNBA, Turkey) — club 96/273 = 35%, FIBA 12/45 = 27%"/>
+<circle class="pt" cx="157.3" cy="231.6" r="7.6" fill="var(--s-wnba)" data-tip="Gabby Williams (WNBA, France) — club 148/458 = 32%, FIBA 22/49 = 45%"/>
+<circle class="pt" cx="194.3" cy="174.2" r="5.4" fill="var(--s-wnba)" data-tip="Iliana Rupert (WNBA, France) — club 48/110 = 44%, FIBA 5/8 = 62%"/>
+<circle class="pt" cx="176.9" cy="237.2" r="7.4" fill="var(--s-wnba)" data-tip="Janelle Salaün (WNBA, France) — club 167/436 = 38%, FIBA 19/44 = 43%"/>
+<circle class="pt" cx="144.0" cy="259.5" r="6.4" fill="var(--s-wnba)" data-tip="Leïla Lacan (WNBA, France) — club 48/170 = 28%, FIBA 8/22 = 36%"/>
+<circle class="pt" cx="170.0" cy="239.7" r="8.1" fill="var(--s-wnba)" data-tip="Marine Johannes (WNBA, France) — club 164/453 = 36%, FIBA 28/66 = 42%"/>
+<circle class="pt" cx="172.5" cy="200.2" r="5.7" fill="var(--s-wnba)" data-tip="Noemie Brochant (WNBA, France) — club 44/119 = 37%, FIBA 6/11 = 55%"/>
+<circle class="pt" cx="138.3" cy="252.6" r="6.6" fill="var(--s-wnba)" data-tip="Valeriane Ayayi (WNBA, France) — club 18/68 = 26%, FIBA 10/26 = 38%"/>
+<circle class="pt" cx="171.5" cy="301.3" r="6.1" fill="var(--s-wnba)" data-tip="Teja Oblak (WNBA, Slovenia) — club 22/60 = 37%, FIBA 4/17 = 24%"/>
+<circle class="pt" cx="152.3" cy="224.6" r="6.1" fill="var(--s-wnba)" data-tip="Laura Juskaite (WNBA, Lithuania) — club 44/143 = 31%, FIBA 8/17 = 47%"/>
+<circle class="pt" cx="92.8" cy="277.7" r="5.8" fill="var(--s-wnba)" data-tip="Angela Dugalic (WNBA, Serbia) — club 5/40 = 12%, FIBA 4/13 = 31%"/>
+<circle class="pt" cx="189.3" cy="284.9" r="6.7" fill="var(--s-wnba)" data-tip="Jovana Nogic (WNBA, Serbia) — club 32/76 = 42%, FIBA 8/28 = 29%"/>
+<circle class="pt" cx="168.0" cy="307.5" r="7.1" fill="var(--s-wnba)" data-tip="Cecilia Zandalasini (WNBA, Italy) — club 105/295 = 36%, FIBA 8/37 = 22%"/>
+<circle class="pt" cx="108.2" cy="263.9" r="6.3" fill="var(--s-wnba)" data-tip="Holly Winterburn (WNBA, GreatBritain) — club 10/58 = 17%, FIBA 7/20 = 35%"/>
+<circle class="pt" cx="132.7" cy="259.5" r="5.7" fill="var(--s-wnba)" data-tip="Temi Fagbenle (WNBA, GreatBritain) — club 25/101 = 25%, FIBA 4/11 = 36%"/>
+<circle class="pt" cx="166.8" cy="223.6" r="6.2" fill="var(--s-wnba)" data-tip="Awa Fam (WNBA, Spain) — club 56/159 = 35%, FIBA 9/19 = 47%"/>
+<circle class="pt" cx="164.2" cy="272.1" r="7.2" fill="var(--s-wnba)" data-tip="Maria Conde (WNBA, Spain) — club 53/154 = 34%, FIBA 13/40 = 32%"/>
+<circle class="pt" cx="162.3" cy="280.2" r="6.8" fill="var(--s-wnba)" data-tip="Megan Gustafson (WNBA, Spain) — club 68/201 = 34%, FIBA 9/30 = 30%"/>
+<circle class="pt" cx="162.8" cy="235.9" r="7.2" fill="var(--s-wnba)" data-tip="Frieda Buhner (WNBA, Germany) — club 34/100 = 34%, FIBA 17/39 = 44%"/>
+<circle class="pt" cx="185.1" cy="299.3" r="7.9" fill="var(--s-wnba)" data-tip="Leonie Fiebich (WNBA, Germany) — club 98/240 = 41%, FIBA 14/58 = 24%"/>
+<circle class="pt" cx="153.7" cy="280.2" r="6.8" fill="var(--s-wnba)" data-tip="Luisa Geiselsoder (WNBA, Germany) — club 49/157 = 31%, FIBA 9/30 = 30%"/>
+<circle class="pt" cx="171.5" cy="215.0" r="5.8" fill="var(--s-wnba)" data-tip="Nyara Sabally (WNBA, Germany) — club 22/60 = 37%, FIBA 6/12 = 50%"/>
+<circle class="pt" cx="185.4" cy="224.1" r="7.1" fill="var(--s-wnba)" data-tip="Antonia Delaere (WNBA, Belgium) — club 27/66 = 41%, FIBA 17/36 = 47%"/>
+<circle class="pt" cx="165.7" cy="249.3" r="7.1" fill="var(--s-wnba)" data-tip="Julie Allemand (WNBA, Belgium) — club 68/195 = 35%, FIBA 15/38 = 39%"/>
+<circle class="pt" cx="144.3" cy="243.8" r="8.2" fill="var(--s-wnba)" data-tip="Julie Vanloo (WNBA, Belgium) — club 32/113 = 28%, FIBA 28/68 = 41%"/>
+<circle class="pt" cx="171.5" cy="296.5" r="6.5" fill="var(--s-wnba)" data-tip="Bridget Carleton (WNBA, Canada) — club 184/502 = 37%, FIBA 6/24 = 25%"/>
+<circle class="pt" cx="160.7" cy="305.6" r="6.6" fill="var(--s-wnba)" data-tip="Kia Nurse (WNBA, Canada) — club 119/357 = 33%, FIBA 6/27 = 22%"/>
+<circle class="pt" cx="143.7" cy="238.3" r="6.3" fill="var(--s-wnba)" data-tip="Damiris Dantas (WNBA, Brazil) — club 36/128 = 28%, FIBA 9/21 = 43%"/>
+<circle class="pt" cx="165.5" cy="271.9" r="7.3" fill="var(--s-wnba)" data-tip="Caitlin Clark (WNBA, USA) — club 166/477 = 35%, FIBA 14/43 = 33%"/>
+<circle class="pt" cx="172.4" cy="284.9" r="6.3" fill="var(--s-wnba)" data-tip="Chelsea Gray (WNBA, USA) — club 171/463 = 37%, FIBA 6/21 = 29%"/>
+<circle class="pt" cx="121.5" cy="206.4" r="6.2" fill="var(--s-wnba)" data-tip="Gianna Kneepkens (WNBA, USA) — club 13/61 = 21%, FIBA 10/19 = 53%"/>
+<circle class="pt" cx="171.2" cy="231.9" r="6.7" fill="var(--s-wnba)" data-tip="Jackie Young (WNBA, USA) — club 226/618 = 37%, FIBA 13/29 = 45%"/>
+<circle class="pt" cx="161.1" cy="254.3" r="6.7" fill="var(--s-wnba)" data-tip="Kahleah Copper (WNBA, USA) — club 151/451 = 33%, FIBA 11/29 = 38%"/>
+<circle class="pt" cx="171.7" cy="222.8" r="6.3" fill="var(--s-wnba)" data-tip="Kelsey Plum (WNBA, USA) — club 145/395 = 37%, FIBA 10/21 = 48%"/>
+<circle class="pt" cx="175.4" cy="337.2" r="5.4" fill="var(--s-wnba)" data-tip="Olivia Miles (WNBA, USA) — club 67/177 = 38%, FIBA 1/8 = 12%"/>
+<circle class="pt" cx="179.7" cy="247.6" r="6.3" fill="var(--s-wnba)" data-tip="Paige Bueckers (WNBA, USA) — club 130/332 = 39%, FIBA 8/20 = 40%"/>
+<circle class="pt" cx="160.7" cy="226.4" r="7.3" fill="var(--s-wnba)" data-tip="Rhyne Howard (WNBA, USA) — club 275/825 = 33%, FIBA 20/43 = 47%"/>
+<circle class="pt" cx="136.8" cy="303.9" r="6.4" fill="var(--s-wnba)" data-tip="Gabriela Jaquez (WNBA, Mexico) — club 19/73 = 26%, FIBA 5/22 = 23%"/>
+<circle class="pt" cx="154.6" cy="228.0" r="7.6" fill="var(--s-wnba)" data-tip="Mai Yamamoto (WNBA, Japan) — club 17/54 = 31%, FIBA 23/50 = 46%"/>
+<circle class="pt" cx="151.4" cy="302.8" r="5.8" fill="var(--s-wnba)" data-tip="Alanna Smith (WNBA, Australia) — club 79/259 = 31%, FIBA 3/13 = 23%"/>
+<circle class="pt" cx="177.4" cy="312.8" r="6.3" fill="var(--s-wnba)" data-tip="Chloe Bibby (WNBA, Australia) — club 30/78 = 38%, FIBA 4/20 = 20%"/>
+<circle class="pt" cx="146.4" cy="238.3" r="5.9" fill="var(--s-wnba)" data-tip="Ezi Magbegor (WNBA, Australia) — club 22/76 = 29%, FIBA 6/14 = 43%"/>
+<circle class="pt" cx="146.1" cy="296.5" r="6.5" fill="var(--s-wnba)" data-tip="Isobel Borlase (WNBA, Australia) — club 28/97 = 29%, FIBA 6/24 = 25%"/>
+<circle class="pt" cx="147.4" cy="269.3" r="6.0" fill="var(--s-wnba)" data-tip="Jade Melbourne (WNBA, Australia) — club 60/205 = 29%, FIBA 5/15 = 33%"/>
+<circle class="pt" cx="180.5" cy="225.2" r="6.9" fill="var(--s-wnba)" data-tip="Xu Han (WNBA, China) — club 41/104 = 39%, FIBA 15/32 = 47%"/>
+<circle class="pt" cx="148.6" cy="256.9" r="7.0" fill="var(--s-wnba)" data-tip="Amy Okonkwo (WNBA, Nigeria) — club 16/54 = 30%, FIBA 13/35 = 37%"/>
+<circle class="pt" cx="155.2" cy="262.3" r="6.8" fill="var(--s-wnba)" data-tip="Kitija Laksa (WNBA, Latvia) — club 44/139 = 32%, FIBA 11/31 = 35%"/>
+<circle class="pt" cx="172.9" cy="284.9" r="5.9" fill="var(--s-wnba)" data-tip="Awak Kuier (WNBA, Finland) — club 33/89 = 37%, FIBA 4/14 = 29%"/>
+<circle class="pt" cx="146.0" cy="289.1" r="6.9" fill="var(--s-wnba)" data-tip="Dorka Juhász (WNBA, Hungary) — club 15/52 = 29%, FIBA 9/33 = 27%"/>
+<circle class="pt" cx="177.3" cy="305.6" r="5.5" fill="var(--s-wnba)" data-tip="Napheesa Collier (WNBA, USA) — club 83/216 = 38%, FIBA 2/9 = 22%"/>
+<circle class="pt" cx="151.5" cy="233.1" r="5.5" fill="var(--s-wnba)" data-tip="Carla Leite (WNBA, France) — club 54/177 = 31%, FIBA 4/9 = 44%"/>
+<circle class="pt" cx="150.7" cy="341.8" r="5.5" fill="var(--s-ncaa)" data-tip="Elif Istanbulluoglu (NCAA, Turkey) — club 33/109 = 30%, FIBA 1/9 = 11%"/>
+<circle class="pt" cx="153.0" cy="348.4" r="5.7" fill="var(--s-ncaa)" data-tip="Elena Bosgana (NCAA, Greece) — club 48/155 = 31%, FIBA 1/11 = 9%"/>
+<circle class="pt" cx="170.2" cy="269.3" r="5.5" fill="var(--s-ncaa)" data-tip="Ioanna Krimili (NCAA, Greece) — club 95/262 = 36%, FIBA 3/9 = 33%"/>
+<circle class="pt" cx="154.9" cy="215.0" r="5.4" fill="var(--s-ncaa)" data-tip="Lana Wenger (NCAA, Switzerland) — club 18/57 = 32%, FIBA 4/8 = 50%"/>
+<circle class="pt" cx="158.7" cy="323.7" r="5.8" fill="var(--s-ncaa)" data-tip="Viktoria Ranisavljevic (NCAA, Switzerland) — club 18/55 = 33%, FIBA 2/12 = 17%"/>
+<circle class="pt" cx="161.3" cy="277.7" r="5.8" fill="var(--s-ncaa)" data-tip="Angela Dugalic (NCAA, Serbia) — club 61/182 = 34%, FIBA 4/13 = 31%"/>
+<circle class="pt" cx="178.8" cy="222.1" r="6.4" fill="var(--s-ncaa)" data-tip="Matilda Ekh (NCAA, Sweden) — club 63/162 = 39%, FIBA 11/23 = 48%"/>
+<circle class="pt" cx="155.5" cy="196.9" r="5.5" fill="var(--s-ncaa)" data-tip="Tova Sabel (NCAA, Sweden) — club 67/211 = 32%, FIBA 5/9 = 56%"/>
+<circle class="pt" cx="168.0" cy="252.6" r="5.8" fill="var(--s-ncaa)" data-tip="Nastja Claessens (NCAA, Belgium) — club 42/118 = 36%, FIBA 5/13 = 38%"/>
+<circle class="pt" cx="168.8" cy="191.7" r="5.9" fill="var(--s-ncaa)" data-tip="Sara Guerreiro (NCAA, Portugal) — club 24/67 = 36%, FIBA 8/14 = 57%"/>
+<circle class="pt" cx="166.7" cy="277.1" r="7.3" fill="var(--s-ncaa)" data-tip="Delaney Gibb (NCAA, Canada) — club 146/415 = 35%, FIBA 13/42 = 31%"/>
+<circle class="pt" cx="145.8" cy="345.4" r="5.6" fill="var(--s-ncaa)" data-tip="Merissah Russell (NCAA, Canada) — club 19/66 = 29%, FIBA 1/10 = 10%"/>
+<circle class="pt" cx="115.1" cy="308.1" r="5.9" fill="var(--s-ncaa)" data-tip="Shayeann Day-Wilson (NCAA, Canada) — club 12/62 = 19%, FIBA 3/14 = 21%"/>
+<circle class="pt" cx="164.5" cy="236.7" r="7.9" fill="var(--s-ncaa)" data-tip="Syla Swords (NCAA, Canada) — club 155/449 = 35%, FIBA 26/60 = 43%"/>
+<circle class="pt" cx="146.6" cy="292.2" r="6.2" fill="var(--s-ncaa)" data-tip="Tara Wallack (NCAA, Canada) — club 38/131 = 29%, FIBA 5/19 = 26%"/>
+<circle class="pt" cx="140.9" cy="215.0" r="5.6" fill="var(--s-ncaa)" data-tip="Yvonne Ejim (NCAA, Canada) — club 12/44 = 27%, FIBA 5/10 = 50%"/>
+<circle class="pt" cx="132.1" cy="312.8" r="6.0" fill="var(--s-ncaa)" data-tip="Victoria Gauna (NCAA, Argentina) — club 29/118 = 25%, FIBA 3/15 = 20%"/>
+<circle class="pt" cx="168.7" cy="323.7" r="6.2" fill="var(--s-ncaa)" data-tip="Ayla McDowell (NCAA, Brazil) — club 29/81 = 36%, FIBA 3/18 = 17%"/>
+<circle class="pt" cx="147.0" cy="279.7" r="8.0" fill="var(--s-ncaa)" data-tip="Bella Nascimento (NCAA, Brazil) — club 60/206 = 29%, FIBA 19/63 = 30%"/>
+<circle class="pt" cx="155.4" cy="318.7" r="6.4" fill="var(--s-ncaa)" data-tip="Daniela Gonzalez (NCAA, Colombia) — club 98/309 = 32%, FIBA 4/22 = 18%"/>
+<circle class="pt" cx="156.5" cy="289.1" r="6.4" fill="var(--s-ncaa)" data-tip="Trinity San Antonio (NCAA, PuertoRico) — club 25/78 = 32%, FIBA 6/22 = 27%"/>
+<circle class="pt" cx="133.0" cy="269.3" r="6.3" fill="var(--s-ncaa)" data-tip="Zaida Gonzalez (NCAA, PuertoRico) — club 38/153 = 25%, FIBA 7/21 = 33%"/>
+<circle class="pt" cx="160.7" cy="269.3" r="6.9" fill="var(--s-ncaa)" data-tip="Valentina Ojeda (NCAA, Chile) — club 50/150 = 33%, FIBA 11/33 = 33%"/>
+<circle class="pt" cx="192.8" cy="206.4" r="6.2" fill="var(--s-ncaa)" data-tip="Gianna Kneepkens (NCAA, USA) — club 181/419 = 43%, FIBA 10/19 = 53%"/>
+<circle class="pt" cx="155.3" cy="301.3" r="6.1" fill="var(--s-ncaa)" data-tip="Hannah Hidalgo (NCAA, USA) — club 97/306 = 32%, FIBA 4/17 = 24%"/>
+<circle class="pt" cx="137.9" cy="215.0" r="5.4" fill="var(--s-ncaa)" data-tip="Kennedy Smith (NCAA, USA) — club 63/239 = 26%, FIBA 4/8 = 50%"/>
+<circle class="pt" cx="160.7" cy="289.1" r="5.7" fill="var(--s-ncaa)" data-tip="Madison Booker (NCAA, USA) — club 48/144 = 33%, FIBA 3/11 = 27%"/>
+<circle class="pt" cx="164.9" cy="296.5" r="6.5" fill="var(--s-ncaa)" data-tip="Mikayla Blakes (NCAA, USA) — club 169/488 = 35%, FIBA 6/24 = 25%"/>
+<circle class="pt" cx="172.3" cy="337.2" r="5.4" fill="var(--s-ncaa)" data-tip="Olivia Miles (NCAA, USA) — club 145/393 = 37%, FIBA 1/8 = 12%"/>
+<circle class="pt" cx="187.0" cy="247.6" r="6.3" fill="var(--s-ncaa)" data-tip="Paige Bueckers (NCAA, USA) — club 70/169 = 41%, FIBA 8/20 = 40%"/>
+<circle class="pt" cx="149.6" cy="277.7" r="6.6" fill="var(--s-ncaa)" data-tip="Yirsy Queliz (NCAA, DominicanRepublic) — club 94/314 = 30%, FIBA 8/26 = 31%"/>
+<circle class="pt" cx="171.2" cy="303.9" r="6.4" fill="var(--s-ncaa)" data-tip="Gabriela Jaquez (NCAA, Mexico) — club 79/216 = 37%, FIBA 5/22 = 23%"/>
+<circle class="pt" cx="169.0" cy="271.4" r="7.7" fill="var(--s-ncaa)" data-tip="Mariana Valenzuela (NCAA, Mexico) — club 80/223 = 36%, FIBA 17/52 = 33%"/>
+<circle class="pt" cx="172.7" cy="288.1" r="6.7" fill="var(--s-ncaa)" data-tip="Naomi Panganiban (NCAA, Philippines) — club 107/289 = 37%, FIBA 8/29 = 28%"/>
+<circle class="pt" cx="151.9" cy="296.5" r="6.5" fill="var(--s-ncaa)" data-tip="Sumayah Sugapong (NCAA, Philippines) — club 80/261 = 31%, FIBA 6/24 = 25%"/>
+<circle class="pt" cx="174.7" cy="233.1" r="7.1" fill="var(--s-ncaa)" data-tip="Vanessa De Jesus (NCAA, Philippines) — club 67/178 = 38%, FIBA 16/36 = 44%"/>
+<circle class="pt" cx="149.3" cy="378.0" r="5.6" fill="var(--s-ncaa)" data-tip="Bailey Flavell (NCAA, New Zealand) — club 43/144 = 30%, FIBA 0/10 = 0%"/>
+<circle class="pt" cx="158.1" cy="277.7" r="5.8" fill="var(--s-ncaa)" data-tip="Tayla Dalton (NCAA, New Zealand) — club 14/43 = 33%, FIBA 4/13 = 31%"/>
+<circle class="pt" cx="179.4" cy="312.8" r="6.0" fill="var(--s-ncaa)" data-tip="Nene Ndiaye (NCAA, Senegal) — club 43/110 = 39%, FIBA 3/15 = 20%"/>
+<circle class="pt" cx="153.8" cy="269.3" r="6.3" fill="var(--s-ncaa)" data-tip="Sira Thienou (NCAA, Mali) — club 54/173 = 31%, FIBA 7/21 = 33%"/>
+<circle class="pt" cx="146.1" cy="287.4" r="6.2" fill="var(--s-ncaa)" data-tip="Mariana Cubero (NCAA, CostaRica) — club 73/253 = 29%, FIBA 5/18 = 28%"/>
+<circle class="pt" cx="162.0" cy="284.9" r="8.5" fill="var(--s-ncaa)" data-tip="Kiyomi McMiller (NCAA, Nicaragua) — club 85/252 = 34%, FIBA 22/77 = 29%"/>
+<circle class="pt" cx="152.9" cy="296.5" r="5.4" fill="var(--s-ncaa)" data-tip="Milan Tuttle (NCAA, Panama) — club 13/42 = 31%, FIBA 2/8 = 25%"/>
+<circle class="pt" cx="195.9" cy="242.2" r="7.1" fill="var(--s-ncaa)" data-tip="Alberte Rimdal (NCAA, Denmark) — club 34/77 = 44%, FIBA 15/36 = 42%"/>
+<circle class="pt" cx="194.9" cy="240.7" r="6.2" fill="var(--s-ncaa)" data-tip="Frida Formann (NCAA, Denmark) — club 39/89 = 44%, FIBA 8/19 = 42%"/>
+<circle class="pt" cx="132.6" cy="352.9" r="5.8" fill="var(--s-ncaa)" data-tip="Karyn Sanford (NCAA, Norway) — club 44/178 = 25%, FIBA 1/13 = 8%"/>
+<circle class="pt" cx="137.0" cy="277.7" r="5.8" fill="var(--s-ncaa)" data-tip="Maria Myklebust (NCAA, Norway) — club 30/115 = 26%, FIBA 4/13 = 31%"/>
+<circle class="pt" cx="164.4" cy="269.3" r="6.8" fill="var(--s-ncaa)" data-tip="Anna Gret Asi (NCAA, Estonia) — club 70/203 = 34%, FIBA 10/30 = 33%"/>
+<circle class="pt" cx="180.3" cy="296.5" r="6.3" fill="var(--s-ncaa)" data-tip="Johanna Teder (NCAA, Estonia) — club 24/61 = 39%, FIBA 5/20 = 25%"/>
+<circle class="pt" cx="131.9" cy="337.2" r="5.4" fill="var(--s-ncaa)" data-tip="Keandra Koorits (NCAA, Estonia) — club 25/102 = 25%, FIBA 1/8 = 12%"/>
+<circle class="pt" cx="111.9" cy="277.7" r="5.8" fill="var(--s-ncaa)" data-tip="Hennie Van Schaik (NCAA, Netherlands) — club 9/49 = 18%, FIBA 4/13 = 31%"/>
+<circle class="pt" cx="181.2" cy="238.3" r="5.9" fill="var(--s-ncaa)" data-tip="Mia Vuksic (NCAA, Croatia) — club 21/53 = 40%, FIBA 6/14 = 43%"/>
+<circle class="pt" cx="166.9" cy="291.1" r="6.8" fill="var(--s-ncaa)" data-tip="Enya Maguire (NCAA, Ireland) — club 61/173 = 35%, FIBA 8/30 = 27%"/>
+<circle class="pt" cx="140.5" cy="299.8" r="6.5" fill="var(--s-ncaa)" data-tip="Ava O'Neil (NCAA, Armenia) — club 38/140 = 27%, FIBA 6/25 = 24%"/>
+<circle class="pt" cx="154.7" cy="280.2" r="5.6" fill="var(--s-ncaa)" data-tip="Lia Krumian (NCAA, Armenia) — club 57/181 = 31%, FIBA 3/10 = 30%"/>
+<circle class="pt" cx="165.2" cy="284.9" r="6.3" fill="var(--s-ncaa)" data-tip="Astera Tuhina (NCAA, Kosovo) — club 67/193 = 35%, FIBA 6/21 = 29%"/>
+<circle class="pt" cx="134.7" cy="239.7" r="6.9" fill="var(--s-ncaa)" data-tip="Malvina Haziri (NCAA, Kosovo) — club 17/67 = 25%, FIBA 14/33 = 42%"/>
+<circle class="pt" cx="162.7" cy="251.2" r="6.2" fill="var(--s-ncaa)" data-tip="Mariah Elohim (NCAA, VirginIslands) — club 130/383 = 34%, FIBA 7/18 = 39%"/>
+<circle class="pt" cx="122.3" cy="259.5" r="5.7" fill="var(--s-ncaa)" data-tip="Anisa Jeffries (NCAA, Mexico) — club 11/51 = 22%, FIBA 4/11 = 36%"/>
+<circle class="pt" cx="173.1" cy="288.1" r="6.7" fill="var(--s-ncaa)" data-tip="Aaliyah Guyton (NCAA, Brazil) — club 55/148 = 37%, FIBA 8/29 = 28%"/>
+<circle class="pt" cx="140.9" cy="215.0" r="6.0" fill="var(--s-ncaa)" data-tip="Ella Brow (NCAA, New Zealand) — club 12/44 = 27%, FIBA 8/16 = 50%"/>
+<circle class="pt" cx="167.7" cy="247.6" r="5.6" fill="var(--s-ncaa)" data-tip="Lauren Whittaker (NCAA, New Zealand) — club 33/93 = 35%, FIBA 4/10 = 40%"/>
+<circle class="pt" cx="133.5" cy="280.2" r="5.6" fill="var(--s-ncaa)" data-tip="Agot Makeer (NCAA, Canada) — club 17/68 = 25%, FIBA 3/10 = 30%"/>
+<circle class="pt" cx="185.6" cy="308.1" r="5.9" fill="var(--s-ncaa)" data-tip="Avery Howell (NCAA, Canada) — club 143/349 = 41%, FIBA 3/14 = 21%"/>
+<circle class="pt" cx="184.7" cy="242.2" r="5.8" fill="var(--s-ncaa)" data-tip="Cearah Parchment (NCAA, Canada) — club 35/86 = 41%, FIBA 5/12 = 42%"/>
+<circle class="pt" cx="148.1" cy="240.7" r="6.2" fill="var(--s-ncaa)" data-tip="Jasmine Bascoe (NCAA, Canada) — club 112/380 = 29%, FIBA 8/19 = 42%"/>
+<text class="ax" x="215.0" y="424" text-anchor="middle">club rate (%)</text>
+<text class="ax" transform="translate(14,215.0) rotate(-90)" text-anchor="middle">FIBA rate (%)</text>
+</svg></div></div>
+  <p class="note">Marker size follows FIBA attempts, so the small points are
+  the thin samples. Points above the dashed line shot better in FIBA than at
+  their club. The spread is the real story: individual gaps run to &plusmn;30
+  points, and the coefficient is the centre of that cloud, not a description of
+  any one player.</p>
+</section>
+
+<section>
+  <h2>Audit</h2>
+  <h3>The name match, exposed</h3>
+  <p>Synergy issues a different player id per league, so club and FIBA records
+  cannot be joined on id and are matched on normalised name. That is the
+  weakest assumption in the study, so every pair it produced is listed here
+  rather than hidden. Club team and nation are shown because an implausible
+  pairing is usually obvious from them.</p>
+  <div class="controls">
+    <input type="search" id="q" placeholder="filter by name&hellip;" aria-label="Filter by name">
+    <select id="lgf" aria-label="Filter by league">
+      <option value="">both leagues</option>
+      <option value="ncaa">NCAA only</option>
+      <option value="wnba">WNBA only</option>
+    </select>
+    <span class="note" id="cnt" style="margin:0"></span>
+  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr>
+      <th>Player</th><th>League</th><th>Club</th><th>Nation</th>
+      <th class="num">free throw</th><th class="num">two point</th><th class="num">three point</th>
+    </tr></thead>
+    <tbody id="tb"><tr data-league="wnba" data-name="aaliyah edwards"><td class="nm">Aaliyah Edwards</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Connecticut Sun</td><td class="sub">Canada</td><td class="num" title="club 125/181 · FIBA 13/20">69 → 65 <span class="gp">(-4)</span></td><td class="num" title="club 197/382 · FIBA 25/40">52 → 62 <span class="gp">(+11)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="aaliyah guyton"><td class="nm">Aaliyah Guyton</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Illinois Fighting Illini</td><td class="sub">Brazil</td><td class="num" title="club 40/51 · FIBA 15/22">78 → 68 <span class="gp">(-10)</span></td><td class="num" title="club 60/154 · FIBA 21/42">39 → 50 <span class="gp">(+11)</span></td><td class="num" title="club 55/148 · FIBA 8/29">37 → 28 <span class="gp">(-10)</span></td></tr><tr data-league="ncaa" data-name="agot makeer"><td class="nm">Agot Makeer</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">South Carolina Gamecocks</td><td class="sub">Canada</td><td class="num empty">—</td><td class="num" title="club 74/129 · FIBA 15/22">57 → 68 <span class="gp">(+11)</span></td><td class="num" title="club 17/68 · FIBA 3/10">25 → 30 <span class="gp">(+5)</span></td></tr><tr data-league="wnba" data-name="alanna smith"><td class="nm">Alanna Smith</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Dallas Wings</td><td class="sub">Australia</td><td class="num" title="club 67/116 · FIBA 11/21">58 → 52 <span class="gp">(-5)</span></td><td class="num" title="club 186/296 · FIBA 24/42">63 → 57 <span class="gp">(-6)</span></td><td class="num" title="club 79/259 · FIBA 3/13">31 → 23 <span class="gp">(-7)</span></td></tr><tr data-league="ncaa" data-name="alberte rimdal"><td class="nm">Alberte Rimdal</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Nebraska Cornhuskers</td><td class="sub">Denmark</td><td class="num" title="club 45/51 · FIBA 10/11">88 → 91 <span class="gp">(+3)</span></td><td class="num" title="club 56/112 · FIBA 20/41">50 → 49 <span class="gp">(-1)</span></td><td class="num" title="club 34/77 · FIBA 15/36">44 → 42 <span class="gp">(-2)</span></td></tr><tr data-league="ncaa" data-name="alexia dizeko"><td class="nm">Alexia Dizeko</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Florida Gators</td><td class="sub">Angola</td><td class="num" title="club 49/62 · FIBA 7/8">79 → 88 <span class="gp">(+8)</span></td><td class="num" title="club 99/182 · FIBA 8/20">54 → 40 <span class="gp">(-14)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="aliyah boston"><td class="nm">Aliyah Boston</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Indiana Fever</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 544/989 · FIBA 9/22">55 → 41 <span class="gp">(-14)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="alondra lizama"><td class="nm">Alondra Lizama</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Cal State Northridge Matadors</td><td class="sub">El Salvador</td><td class="num" title="club 58/88 · FIBA 10/18">66 → 56 <span class="gp">(-10)</span></td><td class="num" title="club 60/115 · FIBA 17/35">52 → 49 <span class="gp">(-4)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="amy okonkwo"><td class="nm">Amy Okonkwo</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Atlanta Dream</td><td class="sub">Nigeria</td><td class="num empty">—</td><td class="num" title="club 30/50 · FIBA 20/36">60 → 56 <span class="gp">(-4)</span></td><td class="num" title="club 16/54 · FIBA 13/35">30 → 37 <span class="gp">(+8)</span></td></tr><tr data-league="wnba" data-name="angel reese"><td class="nm">Angel Reese</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Atlanta Dream</td><td class="sub">USA</td><td class="num" title="club 400/544 · FIBA 26/42">74 → 62 <span class="gp">(-12)</span></td><td class="num" title="club 454/956 · FIBA 23/40">47 → 57 <span class="gp">(+10)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="angela dugalic"><td class="nm">Angela Dugalic</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Washington Mystics</td><td class="sub">Serbia</td><td class="num empty">—</td><td class="num" title="club 38/68 · FIBA 7/14">56 → 50 <span class="gp">(-6)</span></td><td class="num" title="club 5/40 · FIBA 4/13">12 → 31 <span class="gp">(+18)</span></td></tr><tr data-league="ncaa" data-name="angela dugalic"><td class="nm">Angela Dugalic</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">UCLA Bruins</td><td class="sub">Serbia</td><td class="num empty">—</td><td class="num" title="club 170/315 · FIBA 7/14">54 → 50 <span class="gp">(-4)</span></td><td class="num" title="club 61/182 · FIBA 4/13">34 → 31 <span class="gp">(-3)</span></td></tr><tr data-league="ncaa" data-name="angelica velez"><td class="nm">Angelica Velez</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Syracuse Orange</td><td class="sub">PuertoRico</td><td class="num empty">—</td><td class="num" title="club 38/115 · FIBA 5/18">33 → 28 <span class="gp">(-5)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="anisa jeffries"><td class="nm">Anisa Jeffries</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Grand Canyon University Antelopes</td><td class="sub">Mexico</td><td class="num" title="club 36/41 · FIBA 19/21">88 → 90 <span class="gp">(+3)</span></td><td class="num" title="club 83/156 · FIBA 21/47">53 → 45 <span class="gp">(-9)</span></td><td class="num" title="club 11/51 · FIBA 4/11">22 → 36 <span class="gp">(+15)</span></td></tr><tr data-league="ncaa" data-name="anna gret asi"><td class="nm">Anna Gret Asi</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Oklahoma State Cowgirls</td><td class="sub">Estonia</td><td class="num" title="club 43/55 · FIBA 13/13">78 → 100 <span class="gp">(+22)</span></td><td class="num" title="club 54/112 · FIBA 18/41">48 → 44 <span class="gp">(-4)</span></td><td class="num" title="club 70/203 · FIBA 10/30">34 → 33 <span class="gp">(-1)</span></td></tr><tr data-league="wnba" data-name="antonia delaere"><td class="nm">Antonia Delaere</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Minnesota Lynx</td><td class="sub">Belgium</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 27/66 · FIBA 17/36">41 → 47 <span class="gp">(+6)</span></td></tr><tr data-league="ncaa" data-name="antonicia moultrie"><td class="nm">Antonicia Moultrie</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Ohio Bobcats</td><td class="sub">Bahamas</td><td class="num" title="club 31/47 · FIBA 12/15">66 → 80 <span class="gp">(+14)</span></td><td class="num" title="club 34/59 · FIBA 15/23">58 → 65 <span class="gp">(+8)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="astera tuhina"><td class="nm">Astera Tuhina</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Oregon Ducks</td><td class="sub">Kosovo</td><td class="num" title="club 53/70 · FIBA 8/16">76 → 50 <span class="gp">(-26)</span></td><td class="num" title="club 79/189 · FIBA 17/29">42 → 59 <span class="gp">(+17)</span></td><td class="num" title="club 67/193 · FIBA 6/21">35 → 29 <span class="gp">(-6)</span></td></tr><tr data-league="ncaa" data-name="audi crooks"><td class="nm">Audi Crooks</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Iowa State Cyclones</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 647/1014 · FIBA 8/16">64 → 50 <span class="gp">(-14)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="ava o'neil"><td class="nm">Ava O'Neil</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Gettysburg College Bullets</td><td class="sub">Armenia</td><td class="num empty">—</td><td class="num" title="club 45/137 · FIBA 4/15">33 → 27 <span class="gp">(-6)</span></td><td class="num" title="club 38/140 · FIBA 6/25">27 → 24 <span class="gp">(-3)</span></td></tr><tr data-league="ncaa" data-name="avery howell"><td class="nm">Avery Howell</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Washington Huskies</td><td class="sub">Canada</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 143/349 · FIBA 3/14">41 → 21 <span class="gp">(-20)</span></td></tr><tr data-league="wnba" data-name="awa fam"><td class="nm">Awa Fam</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Seattle Storm</td><td class="sub">Spain</td><td class="num empty">—</td><td class="num" title="club 90/170 · FIBA 31/61">53 → 51 <span class="gp">(-2)</span></td><td class="num" title="club 56/159 · FIBA 9/19">35 → 47 <span class="gp">(+12)</span></td></tr><tr data-league="wnba" data-name="awak kuier"><td class="nm">Awak Kuier</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Dallas Wings</td><td class="sub">Finland</td><td class="num" title="club 34/47 · FIBA 8/11">72 → 73 <span class="gp">(+0)</span></td><td class="num" title="club 69/114 · FIBA 8/13">61 → 62 <span class="gp">(+1)</span></td><td class="num" title="club 33/89 · FIBA 4/14">37 → 29 <span class="gp">(-9)</span></td></tr><tr data-league="ncaa" data-name="ayla mcdowell"><td class="nm">Ayla McDowell</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">South Carolina Gamecocks</td><td class="sub">Brazil</td><td class="num empty">—</td><td class="num" title="club 19/40 · FIBA 4/10">48 → 40 <span class="gp">(-7)</span></td><td class="num" title="club 29/81 · FIBA 3/18">36 → 17 <span class="gp">(-19)</span></td></tr><tr data-league="ncaa" data-name="bailey flavell"><td class="nm">Bailey Flavell</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Hawaii Warriors</td><td class="sub">New Zealand</td><td class="num" title="club 93/124 · FIBA 3/9">75 → 33 <span class="gp">(-42)</span></td><td class="num" title="club 93/220 · FIBA 8/16">42 → 50 <span class="gp">(+8)</span></td><td class="num" title="club 43/144 · FIBA 0/10">30 → 0 <span class="gp">(-30)</span></td></tr><tr data-league="ncaa" data-name="bella nascimento"><td class="nm">Bella Nascimento</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">William &amp; Mary Tribe</td><td class="sub">Brazil</td><td class="num" title="club 57/77 · FIBA 25/27">74 → 93 <span class="gp">(+19)</span></td><td class="num" title="club 169/387 · FIBA 13/37">44 → 35 <span class="gp">(-9)</span></td><td class="num" title="club 60/206 · FIBA 19/63">29 → 30 <span class="gp">(+1)</span></td></tr><tr data-league="wnba" data-name="breanna stewart"><td class="nm">Breanna Stewart</td><td><span class="pill wnba">WNBA</span></td><td class="sub">New York Liberty</td><td class="sub">USA</td><td class="num" title="club 479/568 · FIBA 23/30">84 → 77 <span class="gp">(-8)</span></td><td class="num" title="club 504/955 · FIBA 22/38">53 → 58 <span class="gp">(+5)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="bridget carleton"><td class="nm">Bridget Carleton</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Portland Fire</td><td class="sub">Canada</td><td class="num" title="club 98/116 · FIBA 13/14">84 → 93 <span class="gp">(+8)</span></td><td class="num" title="club 133/288 · FIBA 18/37">46 → 49 <span class="gp">(+2)</span></td><td class="num" title="club 184/502 · FIBA 6/24">37 → 25 <span class="gp">(-12)</span></td></tr><tr data-league="wnba" data-name="caitlin clark"><td class="nm">Caitlin Clark</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Indiana Fever</td><td class="sub">USA</td><td class="num" title="club 268/314 · FIBA 21/27">85 → 78 <span class="gp">(-8)</span></td><td class="num" title="club 230/446 · FIBA 14/21">52 → 67 <span class="gp">(+15)</span></td><td class="num" title="club 166/477 · FIBA 14/43">35 → 33 <span class="gp">(-2)</span></td></tr><tr data-league="wnba" data-name="carla leite"><td class="nm">Carla Leite</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Portland Fire</td><td class="sub">France</td><td class="num" title="club 308/367 · FIBA 10/11">84 → 91 <span class="gp">(+7)</span></td><td class="num empty">—</td><td class="num" title="club 54/177 · FIBA 4/9">31 → 44 <span class="gp">(+14)</span></td></tr><tr data-league="ncaa" data-name="carolina lopez"><td class="nm">Carolina Lopez</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Swarthmore Garnet</td><td class="sub">Colombia</td><td class="num empty">—</td><td class="num" title="club 10/45 · FIBA 5/18">22 → 28 <span class="gp">(+6)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="catarina ferreira"><td class="nm">Catarina Ferreira</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Oregon State Beavers</td><td class="sub">Brazil</td><td class="num" title="club 108/134 · FIBA 11/16">81 → 69 <span class="gp">(-12)</span></td><td class="num" title="club 82/198 · FIBA 5/14">41 → 36 <span class="gp">(-6)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="cearah parchment"><td class="nm">Cearah Parchment</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Illinois Fighting Illini</td><td class="sub">Canada</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 35/86 · FIBA 5/12">41 → 42 <span class="gp">(+1)</span></td></tr><tr data-league="wnba" data-name="cecilia zandalasini"><td class="nm">Cecilia Zandalasini</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Golden State Valkyries</td><td class="sub">Italy</td><td class="num" title="club 89/107 · FIBA 29/35">83 → 83 <span class="gp">(-0)</span></td><td class="num" title="club 124/276 · FIBA 35/66">45 → 53 <span class="gp">(+8)</span></td><td class="num" title="club 105/295 · FIBA 8/37">36 → 22 <span class="gp">(-14)</span></td></tr><tr data-league="wnba" data-name="chelsea gray"><td class="nm">Chelsea Gray</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Las Vegas Aces</td><td class="sub">USA</td><td class="num" title="club 173/196 · FIBA 7/9">88 → 78 <span class="gp">(-10)</span></td><td class="num" title="club 286/579 · FIBA 16/27">49 → 59 <span class="gp">(+10)</span></td><td class="num" title="club 171/463 · FIBA 6/21">37 → 29 <span class="gp">(-8)</span></td></tr><tr data-league="wnba" data-name="chloe bibby"><td class="nm">Chloe Bibby</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Portland Fire</td><td class="sub">Australia</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 30/78 · FIBA 4/20">38 → 20 <span class="gp">(-18)</span></td></tr><tr data-league="wnba" data-name="damiris dantas"><td class="nm">Damiris Dantas</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Indiana Fever</td><td class="sub">Brazil</td><td class="num" title="club 35/41 · FIBA 25/34">85 → 74 <span class="gp">(-12)</span></td><td class="num" title="club 47/104 · FIBA 29/57">45 → 51 <span class="gp">(+6)</span></td><td class="num" title="club 36/128 · FIBA 9/21">28 → 43 <span class="gp">(+15)</span></td></tr><tr data-league="ncaa" data-name="daniela gonzalez"><td class="nm">Daniela Gonzalez</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">South Alabama Jaguars</td><td class="sub">Colombia</td><td class="num" title="club 118/181 · FIBA 9/12">65 → 75 <span class="gp">(+10)</span></td><td class="num" title="club 116/289 · FIBA 4/18">40 → 22 <span class="gp">(-18)</span></td><td class="num" title="club 98/309 · FIBA 4/22">32 → 18 <span class="gp">(-14)</span></td></tr><tr data-league="ncaa" data-name="danika galea"><td class="nm">Danika Galea</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Arkansas Razorbacks</td><td class="sub">Malta</td><td class="num empty">—</td><td class="num" title="club 61/110 · FIBA 19/33">55 → 58 <span class="gp">(+2)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="dearica hamby"><td class="nm">Dearica Hamby</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Los Angeles Sparks</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 537/903 · FIBA 15/21">59 → 71 <span class="gp">(+12)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="delaney gibb"><td class="nm">Delaney Gibb</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Brigham Young Cougars</td><td class="sub">Canada</td><td class="num" title="club 196/252 · FIBA 16/20">78 → 80 <span class="gp">(+2)</span></td><td class="num" title="club 212/448 · FIBA 17/45">47 → 38 <span class="gp">(-10)</span></td><td class="num" title="club 146/415 · FIBA 13/42">35 → 31 <span class="gp">(-4)</span></td></tr><tr data-league="ncaa" data-name="delma zita"><td class="nm">Delma Zita</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">UTEP Miners</td><td class="sub">Mozambique</td><td class="num empty">—</td><td class="num" title="club 96/245 · FIBA 5/21">39 → 24 <span class="gp">(-15)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="dominique malonga"><td class="nm">Dominique Malonga</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Seattle Storm</td><td class="sub">France</td><td class="num" title="club 146/211 · FIBA 17/20">69 → 85 <span class="gp">(+16)</span></td><td class="num" title="club 368/685 · FIBA 30/54">54 → 56 <span class="gp">(+2)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="dorka juhász"><td class="nm">Dorka Juhász</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Minnesota Lynx</td><td class="sub">Hungary</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 15/52 · FIBA 9/33">29 → 27 <span class="gp">(-2)</span></td></tr><tr data-league="ncaa" data-name="elena bosgana"><td class="nm">Elena Bosgana</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Stanford Cardinal</td><td class="sub">Greece</td><td class="num empty">—</td><td class="num" title="club 88/168 · FIBA 5/9">52 → 56 <span class="gp">(+3)</span></td><td class="num" title="club 48/155 · FIBA 1/11">31 → 9 <span class="gp">(-22)</span></td></tr><tr data-league="ncaa" data-name="elif istanbulluoglu"><td class="nm">Elif Istanbulluoglu</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Louisville Cardinals</td><td class="sub">Turkey</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 33/109 · FIBA 1/9">30 → 11 <span class="gp">(-19)</span></td></tr><tr data-league="ncaa" data-name="ella brow"><td class="nm">Ella Brow</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Baylor Bears</td><td class="sub">New Zealand</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 12/44 · FIBA 8/16">27 → 50 <span class="gp">(+23)</span></td></tr><tr data-league="wnba" data-name="emma meesseman"><td class="nm">Emma Meesseman</td><td><span class="pill wnba">WNBA</span></td><td class="sub">New York Liberty</td><td class="sub">Belgium</td><td class="num" title="club 35/43 · FIBA 13/17">81 → 76 <span class="gp">(-5)</span></td><td class="num" title="club 82/155 · FIBA 49/92">53 → 53 <span class="gp">(+0)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="enya maguire"><td class="nm">Enya Maguire</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">N.J.I.T. Highlanders</td><td class="sub">Ireland</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 61/173 · FIBA 8/30">35 → 27 <span class="gp">(-9)</span></td></tr><tr data-league="wnba" data-name="ezi magbegor"><td class="nm">Ezi Magbegor</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Seattle Storm</td><td class="sub">Australia</td><td class="num" title="club 73/104 · FIBA 8/13">70 → 62 <span class="gp">(-9)</span></td><td class="num" title="club 163/315 · FIBA 32/51">52 → 63 <span class="gp">(+11)</span></td><td class="num" title="club 22/76 · FIBA 6/14">29 → 43 <span class="gp">(+14)</span></td></tr><tr data-league="ncaa" data-name="fatou diakite"><td class="nm">Fatou Diakite</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">South Florida Bulls</td><td class="sub">Cote d'Ivoire</td><td class="num" title="club 39/60 · FIBA 4/9">65 → 44 <span class="gp">(-21)</span></td><td class="num" title="club 74/152 · FIBA 7/12">49 → 58 <span class="gp">(+10)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="flau'jae johnson"><td class="nm">Flau'jae Johnson</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Seattle Storm</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 167/360 · FIBA 7/16">46 → 44 <span class="gp">(-3)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="flaujae johnson"><td class="nm">Flaujae Johnson</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">LSU Tigers</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 320/649 · FIBA 7/16">49 → 44 <span class="gp">(-6)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="franchesca torres"><td class="nm">Franchesca Torres</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Puerto Rico Bayamon</td><td class="sub">PuertoRico</td><td class="num empty">—</td><td class="num" title="club 21/47 · FIBA 2/9">45 → 22 <span class="gp">(-22)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="frida formann"><td class="nm">Frida Formann</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Colorado Buffaloes</td><td class="sub">Denmark</td><td class="num empty">—</td><td class="num" title="club 33/77 · FIBA 17/39">43 → 44 <span class="gp">(+1)</span></td><td class="num" title="club 39/89 · FIBA 8/19">44 → 42 <span class="gp">(-2)</span></td></tr><tr data-league="wnba" data-name="frieda buhner"><td class="nm">Frieda Buhner</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Portland Fire</td><td class="sub">Germany</td><td class="num" title="club 45/52 · FIBA 14/14">87 → 100 <span class="gp">(+13)</span></td><td class="num" title="club 51/98 · FIBA 33/56">52 → 59 <span class="gp">(+7)</span></td><td class="num" title="club 34/100 · FIBA 17/39">34 → 44 <span class="gp">(+10)</span></td></tr><tr data-league="wnba" data-name="gabby williams"><td class="nm">Gabby Williams</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Golden State Valkyries</td><td class="sub">France</td><td class="num" title="club 209/254 · FIBA 25/32">82 → 78 <span class="gp">(-4)</span></td><td class="num" title="club 354/775 · FIBA 23/41">46 → 56 <span class="gp">(+10)</span></td><td class="num" title="club 148/458 · FIBA 22/49">32 → 45 <span class="gp">(+13)</span></td></tr><tr data-league="wnba" data-name="gabriela jaquez"><td class="nm">Gabriela Jaquez</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Chicago Sky</td><td class="sub">Mexico</td><td class="num" title="club 59/72 · FIBA 9/11">82 → 82 <span class="gp">(-0)</span></td><td class="num" title="club 88/171 · FIBA 15/46">51 → 33 <span class="gp">(-19)</span></td><td class="num" title="club 19/73 · FIBA 5/22">26 → 23 <span class="gp">(-3)</span></td></tr><tr data-league="ncaa" data-name="gabriela jaquez"><td class="nm">Gabriela Jaquez</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">UCLA Bruins</td><td class="sub">Mexico</td><td class="num" title="club 128/151 · FIBA 9/11">85 → 82 <span class="gp">(-3)</span></td><td class="num" title="club 245/398 · FIBA 15/46">62 → 33 <span class="gp">(-29)</span></td><td class="num" title="club 79/216 · FIBA 5/22">37 → 23 <span class="gp">(-14)</span></td></tr><tr data-league="wnba" data-name="gianna kneepkens"><td class="nm">Gianna Kneepkens</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Connecticut Sun</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 32/64 · FIBA 7/12">50 → 58 <span class="gp">(+8)</span></td><td class="num" title="club 13/61 · FIBA 10/19">21 → 53 <span class="gp">(+31)</span></td></tr><tr data-league="ncaa" data-name="gianna kneepkens"><td class="nm">Gianna Kneepkens</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">UCLA Bruins</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 188/330 · FIBA 7/12">57 → 58 <span class="gp">(+1)</span></td><td class="num" title="club 181/419 · FIBA 10/19">43 → 53 <span class="gp">(+9)</span></td></tr><tr data-league="ncaa" data-name="grace vanslooten"><td class="nm">Grace VanSlooten</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Michigan State Spartans</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 381/748 · FIBA 13/27">51 → 48 <span class="gp">(-3)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="hannah hidalgo"><td class="nm">Hannah Hidalgo</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Notre Dame Fighting Irish</td><td class="sub">USA</td><td class="num" title="club 357/423 · FIBA 15/19">84 → 79 <span class="gp">(-5)</span></td><td class="num" title="club 508/993 · FIBA 22/46">51 → 48 <span class="gp">(-3)</span></td><td class="num" title="club 97/306 · FIBA 4/17">32 → 24 <span class="gp">(-8)</span></td></tr><tr data-league="ncaa" data-name="hannah stuelke"><td class="nm">Hannah Stuelke</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Iowa Hawkeyes</td><td class="sub">USA</td><td class="num" title="club 196/318 · FIBA 7/12">62 → 58 <span class="gp">(-3)</span></td><td class="num" title="club 312/584 · FIBA 11/15">53 → 73 <span class="gp">(+20)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="heloisa carrera"><td class="nm">Heloisa Carrera</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Arizona State Sun Devils</td><td class="sub">Brazil</td><td class="num empty">—</td><td class="num" title="club 162/302 · FIBA 9/18">54 → 50 <span class="gp">(-4)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="hennie van schaik"><td class="nm">Hennie Van Schaik</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">San Jose State Spartans</td><td class="sub">Netherlands</td><td class="num empty">—</td><td class="num" title="club 38/85 · FIBA 7/13">45 → 54 <span class="gp">(+9)</span></td><td class="num" title="club 9/49 · FIBA 4/13">18 → 31 <span class="gp">(+12)</span></td></tr><tr data-league="wnba" data-name="holly winterburn"><td class="nm">Holly Winterburn</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Atlanta Dream</td><td class="sub">GreatBritain</td><td class="num empty">—</td><td class="num" title="club 36/58 · FIBA 14/30">62 → 47 <span class="gp">(-15)</span></td><td class="num" title="club 10/58 · FIBA 7/20">17 → 35 <span class="gp">(+18)</span></td></tr><tr data-league="ncaa" data-name="hulda joaquim"><td class="nm">Hulda Joaquim</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">New Mexico Lobos</td><td class="sub">Mozambique</td><td class="num empty">—</td><td class="num" title="club 100/178 · FIBA 3/12">56 → 25 <span class="gp">(-31)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="iliana rupert"><td class="nm">Iliana Rupert</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Golden State Valkyries</td><td class="sub">France</td><td class="num empty">—</td><td class="num" title="club 22/51 · FIBA 11/17">43 → 65 <span class="gp">(+22)</span></td><td class="num" title="club 48/110 · FIBA 5/8">44 → 62 <span class="gp">(+19)</span></td></tr><tr data-league="ncaa" data-name="ioanna krimili"><td class="nm">Ioanna Krimili</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">California Golden Bears</td><td class="sub">Greece</td><td class="num empty">—</td><td class="num" title="club 57/129 · FIBA 6/8">44 → 75 <span class="gp">(+31)</span></td><td class="num" title="club 95/262 · FIBA 3/9">36 → 33 <span class="gp">(-3)</span></td></tr><tr data-league="wnba" data-name="isobel borlase"><td class="nm">Isobel Borlase</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Atlanta Dream</td><td class="sub">Australia</td><td class="num" title="club 56/61 · FIBA 28/33">92 → 85 <span class="gp">(-7)</span></td><td class="num" title="club 80/162 · FIBA 28/55">49 → 51 <span class="gp">(+2)</span></td><td class="num" title="club 28/97 · FIBA 6/24">29 → 25 <span class="gp">(-4)</span></td></tr><tr data-league="wnba" data-name="jackie young"><td class="nm">Jackie Young</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Las Vegas Aces</td><td class="sub">USA</td><td class="num" title="club 357/387 · FIBA 7/11">92 → 64 <span class="gp">(-29)</span></td><td class="num" title="club 479/857 · FIBA 27/48">56 → 56 <span class="gp">(+0)</span></td><td class="num" title="club 226/618 · FIBA 13/29">37 → 45 <span class="gp">(+8)</span></td></tr><tr data-league="wnba" data-name="jade melbourne"><td class="nm">Jade Melbourne</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Seattle Storm</td><td class="sub">Australia</td><td class="num" title="club 155/211 · FIBA 11/16">73 → 69 <span class="gp">(-5)</span></td><td class="num" title="club 162/327 · FIBA 12/25">50 → 48 <span class="gp">(-2)</span></td><td class="num" title="club 60/205 · FIBA 5/15">29 → 33 <span class="gp">(+4)</span></td></tr><tr data-league="wnba" data-name="janelle salaün"><td class="nm">Janelle Salaün</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Golden State Valkyries</td><td class="sub">France</td><td class="num" title="club 140/176 · FIBA 20/25">80 → 80 <span class="gp">(+0)</span></td><td class="num" title="club 169/372 · FIBA 25/34">45 → 74 <span class="gp">(+28)</span></td><td class="num" title="club 167/436 · FIBA 19/44">38 → 43 <span class="gp">(+5)</span></td></tr><tr data-league="ncaa" data-name="jasmine bascoe"><td class="nm">Jasmine Bascoe</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Villanova Wildcats</td><td class="sub">Canada</td><td class="num" title="club 159/185 · FIBA 6/8">86 → 75 <span class="gp">(-11)</span></td><td class="num" title="club 337/712 · FIBA 12/27">47 → 44 <span class="gp">(-3)</span></td><td class="num" title="club 112/380 · FIBA 8/19">29 → 42 <span class="gp">(+13)</span></td></tr><tr data-league="wnba" data-name="jessica shepard"><td class="nm">Jessica Shepard</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Dallas Wings</td><td class="sub">Slovenia</td><td class="num" title="club 179/280 · FIBA 19/30">64 → 63 <span class="gp">(-1)</span></td><td class="num" title="club 408/685 · FIBA 34/47">60 → 72 <span class="gp">(+13)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="johanna teder"><td class="nm">Johanna Teder</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Colorado Buffaloes</td><td class="sub">Estonia</td><td class="num empty">—</td><td class="num" title="club 40/73 · FIBA 8/17">55 → 47 <span class="gp">(-8)</span></td><td class="num" title="club 24/61 · FIBA 5/20">39 → 25 <span class="gp">(-14)</span></td></tr><tr data-league="wnba" data-name="jovana nogic"><td class="nm">Jovana Nogic</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Phoenix Mercury</td><td class="sub">Serbia</td><td class="num empty">—</td><td class="num" title="club 18/43 · FIBA 12/26">42 → 46 <span class="gp">(+4)</span></td><td class="num" title="club 32/76 · FIBA 8/28">42 → 29 <span class="gp">(-14)</span></td></tr><tr data-league="ncaa" data-name="joyce edwards"><td class="nm">Joyce Edwards</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">South Carolina Gamecocks</td><td class="sub">USA</td><td class="num" title="club 256/350 · FIBA 11/15">73 → 73 <span class="gp">(+0)</span></td><td class="num" title="club 498/891 · FIBA 13/35">56 → 37 <span class="gp">(-19)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="julie allemand"><td class="nm">Julie Allemand</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Toronto Tempo</td><td class="sub">Belgium</td><td class="num empty">—</td><td class="num" title="club 79/107 · FIBA 11/17">74 → 65 <span class="gp">(-9)</span></td><td class="num" title="club 68/195 · FIBA 15/38">35 → 39 <span class="gp">(+5)</span></td></tr><tr data-league="wnba" data-name="julie vanloo"><td class="nm">Julie Vanloo</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Los Angeles Sparks</td><td class="sub">Belgium</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 32/113 · FIBA 28/68">28 → 41 <span class="gp">(+13)</span></td></tr><tr data-league="wnba" data-name="kahleah copper"><td class="nm">Kahleah Copper</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Phoenix Mercury</td><td class="sub">USA</td><td class="num" title="club 312/384 · FIBA 21/24">81 → 88 <span class="gp">(+6)</span></td><td class="num" title="club 387/757 · FIBA 23/40">51 → 57 <span class="gp">(+6)</span></td><td class="num" title="club 151/451 · FIBA 11/29">33 → 38 <span class="gp">(+4)</span></td></tr><tr data-league="wnba" data-name="kamilla cardoso"><td class="nm">Kamilla Cardoso</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Chicago Sky</td><td class="sub">Brazil</td><td class="num" title="club 249/344 · FIBA 31/45">72 → 69 <span class="gp">(-3)</span></td><td class="num" title="club 479/887 · FIBA 23/52">54 → 44 <span class="gp">(-10)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="karyn sanford"><td class="nm">Karyn Sanford</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Utah State Aggies</td><td class="sub">Norway</td><td class="num" title="club 58/70 · FIBA 9/12">83 → 75 <span class="gp">(-8)</span></td><td class="num" title="club 78/175 · FIBA 12/30">45 → 40 <span class="gp">(-5)</span></td><td class="num" title="club 44/178 · FIBA 1/13">25 → 8 <span class="gp">(-17)</span></td></tr><tr data-league="ncaa" data-name="keandra koorits"><td class="nm">Keandra Koorits</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Washington State Cougars</td><td class="sub">Estonia</td><td class="num empty">—</td><td class="num" title="club 64/136 · FIBA 5/16">47 → 31 <span class="gp">(-16)</span></td><td class="num" title="club 25/102 · FIBA 1/8">25 → 12 <span class="gp">(-12)</span></td></tr><tr data-league="wnba" data-name="kelsey plum"><td class="nm">Kelsey Plum</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Phoenix Mercury</td><td class="sub">USA</td><td class="num" title="club 284/321 · FIBA 8/10">88 → 80 <span class="gp">(-8)</span></td><td class="num" title="club 253/488 · FIBA 9/15">52 → 60 <span class="gp">(+8)</span></td><td class="num" title="club 145/395 · FIBA 10/21">37 → 48 <span class="gp">(+11)</span></td></tr><tr data-league="wnba" data-name="kennedy burke"><td class="nm">Kennedy Burke</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Connecticut Sun</td><td class="sub">Turkey</td><td class="num" title="club 97/134 · FIBA 25/28">72 → 89 <span class="gp">(+17)</span></td><td class="num" title="club 135/265 · FIBA 24/56">51 → 43 <span class="gp">(-8)</span></td><td class="num" title="club 96/273 · FIBA 12/45">35 → 27 <span class="gp">(-8)</span></td></tr><tr data-league="ncaa" data-name="kennedy smith"><td class="nm">Kennedy Smith</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">USC Trojans</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 209/441 · FIBA 4/8">47 → 50 <span class="gp">(+3)</span></td><td class="num" title="club 63/239 · FIBA 4/8">26 → 50 <span class="gp">(+24)</span></td></tr><tr data-league="ncaa" data-name="khadija faye"><td class="nm">Khadija Faye</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Massachusetts College of Liberal Arts (MCLA)</td><td class="sub">Senegal</td><td class="num" title="club 168/232 · FIBA 24/31">72 → 77 <span class="gp">(+5)</span></td><td class="num" title="club 203/426 · FIBA 31/76">48 → 41 <span class="gp">(-7)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="kia nurse"><td class="nm">Kia Nurse</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Toronto Tempo</td><td class="sub">Canada</td><td class="num empty">—</td><td class="num" title="club 67/181 · FIBA 2/13">37 → 15 <span class="gp">(-22)</span></td><td class="num" title="club 119/357 · FIBA 6/27">33 → 22 <span class="gp">(-11)</span></td></tr><tr data-league="wnba" data-name="kiki iriafen"><td class="nm">Kiki Iriafen</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Washington Mystics</td><td class="sub">USA</td><td class="num" title="club 274/382 · FIBA 11/18">72 → 61 <span class="gp">(-11)</span></td><td class="num" title="club 467/912 · FIBA 16/28">51 → 57 <span class="gp">(+6)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="kiki iriafen"><td class="nm">Kiki Iriafen</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">USC Trojans</td><td class="sub">USA</td><td class="num" title="club 140/173 · FIBA 11/18">81 → 61 <span class="gp">(-20)</span></td><td class="num" title="club 238/477 · FIBA 16/28">50 → 57 <span class="gp">(+7)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="kitija laksa"><td class="nm">Kitija Laksa</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Dallas Wings</td><td class="sub">Latvia</td><td class="num empty">—</td><td class="num" title="club 31/67 · FIBA 23/35">46 → 66 <span class="gp">(+19)</span></td><td class="num" title="club 44/139 · FIBA 11/31">32 → 35 <span class="gp">(+4)</span></td></tr><tr data-league="ncaa" data-name="kiyomi mcmiller"><td class="nm">Kiyomi McMiller</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Penn State Lady Lions</td><td class="sub">Nicaragua</td><td class="num" title="club 95/128 · FIBA 44/51">74 → 86 <span class="gp">(+12)</span></td><td class="num" title="club 331/712 · FIBA 89/182">46 → 49 <span class="gp">(+2)</span></td><td class="num" title="club 85/252 · FIBA 22/77">34 → 29 <span class="gp">(-5)</span></td></tr><tr data-league="ncaa" data-name="lana wenger"><td class="nm">Lana Wenger</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Portland State Vikings</td><td class="sub">Switzerland</td><td class="num empty">—</td><td class="num" title="club 58/132 · FIBA 4/8">44 → 50 <span class="gp">(+6)</span></td><td class="num" title="club 18/57 · FIBA 4/8">32 → 50 <span class="gp">(+18)</span></td></tr><tr data-league="ncaa" data-name="laura erikstrup"><td class="nm">Laura Erikstrup</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Grand Canyon University Antelopes</td><td class="sub">Denmark</td><td class="num" title="club 83/112 · FIBA 6/8">74 → 75 <span class="gp">(+1)</span></td><td class="num" title="club 195/305 · FIBA 8/16">64 → 50 <span class="gp">(-14)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="laura juskaite"><td class="nm">Laura Juskaite</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Toronto Tempo</td><td class="sub">Lithuania</td><td class="num" title="club 112/136 · FIBA 22/25">82 → 88 <span class="gp">(+6)</span></td><td class="num" title="club 133/241 · FIBA 18/43">55 → 42 <span class="gp">(-13)</span></td><td class="num" title="club 44/143 · FIBA 8/17">31 → 47 <span class="gp">(+16)</span></td></tr><tr data-league="ncaa" data-name="lauren whittaker"><td class="nm">Lauren Whittaker</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Gonzaga Bulldogs</td><td class="sub">New Zealand</td><td class="num" title="club 140/177 · FIBA 18/28">79 → 64 <span class="gp">(-15)</span></td><td class="num" title="club 206/353 · FIBA 15/35">58 → 43 <span class="gp">(-15)</span></td><td class="num" title="club 33/93 · FIBA 4/10">35 → 40 <span class="gp">(+5)</span></td></tr><tr data-league="wnba" data-name="leonie fiebich"><td class="nm">Leonie Fiebich</td><td><span class="pill wnba">WNBA</span></td><td class="sub">New York Liberty</td><td class="sub">Germany</td><td class="num" title="club 91/107 · FIBA 28/33">85 → 85 <span class="gp">(-0)</span></td><td class="num" title="club 91/171 · FIBA 15/40">53 → 38 <span class="gp">(-16)</span></td><td class="num" title="club 98/240 · FIBA 14/58">41 → 24 <span class="gp">(-17)</span></td></tr><tr data-league="ncaa" data-name="lety vasconcelos"><td class="nm">Lety Vasconcelos</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Illinois Fighting Illini</td><td class="sub">Brazil</td><td class="num empty">—</td><td class="num" title="club 49/88 · FIBA 3/9">56 → 33 <span class="gp">(-22)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="leïla lacan"><td class="nm">Leïla Lacan</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Connecticut Sun</td><td class="sub">France</td><td class="num" title="club 86/110 · FIBA 17/20">78 → 85 <span class="gp">(+7)</span></td><td class="num" title="club 188/360 · FIBA 23/38">52 → 61 <span class="gp">(+8)</span></td><td class="num" title="club 48/170 · FIBA 8/22">28 → 36 <span class="gp">(+8)</span></td></tr><tr data-league="ncaa" data-name="lia krumian"><td class="nm">Lia Krumian</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Emmanuel (MA) Saints</td><td class="sub">Armenia</td><td class="num" title="club 43/53 · FIBA 15/19">81 → 79 <span class="gp">(-2)</span></td><td class="num" title="club 102/246 · FIBA 9/28">41 → 32 <span class="gp">(-9)</span></td><td class="num" title="club 57/181 · FIBA 3/10">31 → 30 <span class="gp">(-1)</span></td></tr><tr data-league="wnba" data-name="luisa geiselsoder"><td class="nm">Luisa Geiselsoder</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Portland Fire</td><td class="sub">Germany</td><td class="num empty">—</td><td class="num" title="club 64/136 · FIBA 35/65">47 → 54 <span class="gp">(+7)</span></td><td class="num" title="club 49/157 · FIBA 9/30">31 → 30 <span class="gp">(-1)</span></td></tr><tr data-league="ncaa" data-name="madison booker"><td class="nm">Madison Booker</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Texas-(Austin) Longhorns</td><td class="sub">USA</td><td class="num" title="club 225/270 · FIBA 10/11">83 → 91 <span class="gp">(+8)</span></td><td class="num" title="club 484/952 · FIBA 13/29">51 → 45 <span class="gp">(-6)</span></td><td class="num" title="club 48/144 · FIBA 3/11">33 → 27 <span class="gp">(-6)</span></td></tr><tr data-league="wnba" data-name="mai yamamoto"><td class="nm">Mai Yamamoto</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Las Vegas Aces</td><td class="sub">Japan</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 17/54 · FIBA 23/50">31 → 46 <span class="gp">(+15)</span></td></tr><tr data-league="ncaa" data-name="malvina haziri"><td class="nm">Malvina Haziri</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Washington State Cougars</td><td class="sub">Kosovo</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 17/67 · FIBA 14/33">25 → 42 <span class="gp">(+17)</span></td></tr><tr data-league="wnba" data-name="maria conde"><td class="nm">Maria Conde</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Toronto Tempo</td><td class="sub">Spain</td><td class="num" title="club 36/41 · FIBA 20/28">88 → 71 <span class="gp">(-16)</span></td><td class="num" title="club 51/134 · FIBA 17/37">38 → 46 <span class="gp">(+8)</span></td><td class="num" title="club 53/154 · FIBA 13/40">34 → 32 <span class="gp">(-2)</span></td></tr><tr data-league="ncaa" data-name="maria gakdeng"><td class="nm">Maria Gakdeng</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">North Carolina Tar Heels</td><td class="sub">South Sudan</td><td class="num" title="club 73/112 · FIBA 14/40">65 → 35 <span class="gp">(-30)</span></td><td class="num" title="club 142/244 · FIBA 41/67">58 → 61 <span class="gp">(+3)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="maria myklebust"><td class="nm">Maria Myklebust</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Florida Atlantic Owls</td><td class="sub">Norway</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 30/115 · FIBA 4/13">26 → 31 <span class="gp">(+5)</span></td></tr><tr data-league="ncaa" data-name="mariah elohim"><td class="nm">Mariah Elohim</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">UNLV Rebels</td><td class="sub">VirginIslands</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 130/383 · FIBA 7/18">34 → 39 <span class="gp">(+5)</span></td></tr><tr data-league="ncaa" data-name="mariana cubero"><td class="nm">Mariana Cubero</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Missouri Baptist Spartans</td><td class="sub">CostaRica</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 73/253 · FIBA 5/18">29 → 28 <span class="gp">(-1)</span></td></tr><tr data-league="ncaa" data-name="mariana valenzuela"><td class="nm">Mariana Valenzuela</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Seton Hall Pirates</td><td class="sub">Mexico</td><td class="num" title="club 39/60 · FIBA 18/28">65 → 64 <span class="gp">(-1)</span></td><td class="num" title="club 101/187 · FIBA 33/65">54 → 51 <span class="gp">(-3)</span></td><td class="num" title="club 80/223 · FIBA 17/52">36 → 33 <span class="gp">(-3)</span></td></tr><tr data-league="wnba" data-name="marine johannes"><td class="nm">Marine Johannes</td><td><span class="pill wnba">WNBA</span></td><td class="sub">New York Liberty</td><td class="sub">France</td><td class="num" title="club 44/51 · FIBA 14/14">86 → 100 <span class="gp">(+14)</span></td><td class="num" title="club 69/131 · FIBA 9/12">53 → 75 <span class="gp">(+22)</span></td><td class="num" title="club 164/453 · FIBA 28/66">36 → 42 <span class="gp">(+6)</span></td></tr><tr data-league="ncaa" data-name="marypaz martinez"><td class="nm">Marypaz Martinez</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Tennessee Southern FireHawks</td><td class="sub">CostaRica</td><td class="num empty">—</td><td class="num" title="club 19/40 · FIBA 1/13">48 → 8 <span class="gp">(-40)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="matilda ekh"><td class="nm">Matilda Ekh</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Virginia Tech Hokies</td><td class="sub">Sweden</td><td class="num empty">—</td><td class="num" title="club 78/151 · FIBA 3/10">52 → 30 <span class="gp">(-22)</span></td><td class="num" title="club 63/162 · FIBA 11/23">39 → 48 <span class="gp">(+9)</span></td></tr><tr data-league="ncaa" data-name="maud huijbens"><td class="nm">Maud Huijbens</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Gonzaga Bulldogs</td><td class="sub">Netherlands</td><td class="num empty">—</td><td class="num" title="club 94/199 · FIBA 7/18">47 → 39 <span class="gp">(-8)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="megan gustafson"><td class="nm">Megan Gustafson</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Portland Fire</td><td class="sub">Spain</td><td class="num" title="club 78/102 · FIBA 19/26">76 → 73 <span class="gp">(-3)</span></td><td class="num" title="club 172/262 · FIBA 34/60">66 → 57 <span class="gp">(-9)</span></td><td class="num" title="club 68/201 · FIBA 9/30">34 → 30 <span class="gp">(-4)</span></td></tr><tr data-league="ncaa" data-name="merissah russell"><td class="nm">Merissah Russell</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Louisville Cardinals</td><td class="sub">Canada</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 19/66 · FIBA 1/10">29 → 10 <span class="gp">(-19)</span></td></tr><tr data-league="ncaa" data-name="mia vuksic"><td class="nm">Mia Vuksic</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">San Francisco Dons</td><td class="sub">Croatia</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 21/53 · FIBA 6/14">40 → 43 <span class="gp">(+3)</span></td></tr><tr data-league="ncaa" data-name="mikayla blakes"><td class="nm">Mikayla Blakes</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Vanderbilt Commodores</td><td class="sub">USA</td><td class="num" title="club 388/448 · FIBA 10/15">87 → 67 <span class="gp">(-20)</span></td><td class="num" title="club 388/742 · FIBA 20/40">52 → 50 <span class="gp">(-2)</span></td><td class="num" title="club 169/488 · FIBA 6/24">35 → 25 <span class="gp">(-10)</span></td></tr><tr data-league="ncaa" data-name="milan tuttle"><td class="nm">Milan Tuttle</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Cal State Dominguez Hills Toros</td><td class="sub">Panama</td><td class="num empty">—</td><td class="num" title="club 17/41 · FIBA 4/11">41 → 36 <span class="gp">(-5)</span></td><td class="num" title="club 13/42 · FIBA 2/8">31 → 25 <span class="gp">(-6)</span></td></tr><tr data-league="ncaa" data-name="mina djordjevic"><td class="nm">Mina Djordjevic</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Capilano University Blues</td><td class="sub">Serbia</td><td class="num empty">—</td><td class="num" title="club 32/107 · FIBA 10/18">30 → 56 <span class="gp">(+26)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="monique billings"><td class="nm">Monique Billings</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Indiana Fever</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 173/323 · FIBA 13/21">54 → 62 <span class="gp">(+8)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="morelia chavez"><td class="nm">Morelia Chavez</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Fresno State Bulldogs</td><td class="sub">Mexico</td><td class="num empty">—</td><td class="num" title="club 19/47 · FIBA 3/10">40 → 30 <span class="gp">(-10)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="naomi panganiban"><td class="nm">Naomi Panganiban</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">San Diego State Aztecs</td><td class="sub">Philippines</td><td class="num" title="club 156/191 · FIBA 12/14">82 → 86 <span class="gp">(+4)</span></td><td class="num" title="club 180/413 · FIBA 15/33">44 → 45 <span class="gp">(+2)</span></td><td class="num" title="club 107/289 · FIBA 8/29">37 → 28 <span class="gp">(-9)</span></td></tr><tr data-league="wnba" data-name="napheesa collier"><td class="nm">Napheesa Collier</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Minnesota Lynx</td><td class="sub">USA</td><td class="num" title="club 206/236 · FIBA 6/8">87 → 75 <span class="gp">(-12)</span></td><td class="num" title="club 363/651 · FIBA 19/29">56 → 66 <span class="gp">(+10)</span></td><td class="num" title="club 83/216 · FIBA 2/9">38 → 22 <span class="gp">(-16)</span></td></tr><tr data-league="ncaa" data-name="nastja claessens"><td class="nm">Nastja Claessens</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Kansas State Wildcats</td><td class="sub">Belgium</td><td class="num empty">—</td><td class="num" title="club 117/191 · FIBA 7/17">61 → 41 <span class="gp">(-20)</span></td><td class="num" title="club 42/118 · FIBA 5/13">36 → 38 <span class="gp">(+3)</span></td></tr><tr data-league="wnba" data-name="natasha mack"><td class="nm">Natasha Mack</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Phoenix Mercury</td><td class="sub">Montenegro</td><td class="num" title="club 75/109 · FIBA 6/12">69 → 50 <span class="gp">(-19)</span></td><td class="num" title="club 232/379 · FIBA 19/30">61 → 63 <span class="gp">(+2)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="nene ndiaye"><td class="nm">Nene Ndiaye</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Rutgers Scarlet Knights</td><td class="sub">Senegal</td><td class="num" title="club 124/168 · FIBA 6/9">74 → 67 <span class="gp">(-7)</span></td><td class="num" title="club 131/285 · FIBA 8/21">46 → 38 <span class="gp">(-8)</span></td><td class="num" title="club 43/110 · FIBA 3/15">39 → 20 <span class="gp">(-19)</span></td></tr><tr data-league="wnba" data-name="noemie brochant"><td class="nm">Noemie Brochant</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Phoenix Mercury</td><td class="sub">France</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 44/119 · FIBA 6/11">37 → 55 <span class="gp">(+18)</span></td></tr><tr data-league="wnba" data-name="nyara sabally"><td class="nm">Nyara Sabally</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Toronto Tempo</td><td class="sub">Germany</td><td class="num" title="club 82/120 · FIBA 19/31">68 → 61 <span class="gp">(-7)</span></td><td class="num" title="club 127/235 · FIBA 28/56">54 → 50 <span class="gp">(-4)</span></td><td class="num" title="club 22/60 · FIBA 6/12">37 → 50 <span class="gp">(+13)</span></td></tr><tr data-league="wnba" data-name="olivia miles"><td class="nm">Olivia Miles</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Minnesota Lynx</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 224/430 · FIBA 11/16">52 → 69 <span class="gp">(+17)</span></td><td class="num" title="club 67/177 · FIBA 1/8">38 → 12 <span class="gp">(-25)</span></td></tr><tr data-league="ncaa" data-name="olivia miles"><td class="nm">Olivia Miles</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">TCU Horned Frogs</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 303/544 · FIBA 11/16">56 → 69 <span class="gp">(+13)</span></td><td class="num" title="club 145/393 · FIBA 1/8">37 → 12 <span class="gp">(-24)</span></td></tr><tr data-league="ncaa" data-name="olivia williams"><td class="nm">Olivia Williams</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">San Francisco Dons</td><td class="sub">New Zealand</td><td class="num empty">—</td><td class="num" title="club 25/62 · FIBA 0/8">40 → 0 <span class="gp">(-40)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="paige bueckers"><td class="nm">Paige Bueckers</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Dallas Wings</td><td class="sub">USA</td><td class="num" title="club 265/302 · FIBA 11/11">88 → 100 <span class="gp">(+12)</span></td><td class="num" title="club 493/928 · FIBA 24/43">53 → 56 <span class="gp">(+3)</span></td><td class="num" title="club 130/332 · FIBA 8/20">39 → 40 <span class="gp">(+1)</span></td></tr><tr data-league="ncaa" data-name="paige bueckers"><td class="nm">Paige Bueckers</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Connecticut Huskies</td><td class="sub">USA</td><td class="num" title="club 113/128 · FIBA 11/11">88 → 100 <span class="gp">(+12)</span></td><td class="num" title="club 216/368 · FIBA 24/43">59 → 56 <span class="gp">(-3)</span></td><td class="num" title="club 70/169 · FIBA 8/20">41 → 40 <span class="gp">(-1)</span></td></tr><tr data-league="wnba" data-name="pauline astier"><td class="nm">Pauline Astier</td><td><span class="pill wnba">WNBA</span></td><td class="sub">New York Liberty</td><td class="sub">France</td><td class="num" title="club 91/103 · FIBA 6/9">88 → 67 <span class="gp">(-22)</span></td><td class="num" title="club 149/255 · FIBA 14/29">58 → 48 <span class="gp">(-10)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="phillipina kyei"><td class="nm">Phillipina Kyei</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Oregon Ducks</td><td class="sub">Canada</td><td class="num empty">—</td><td class="num" title="club 106/211 · FIBA 3/8">50 → 38 <span class="gp">(-13)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="raegan beers"><td class="nm">Raegan Beers</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Connecticut Sun</td><td class="sub">USA</td><td class="num" title="club 49/68 · FIBA 13/17">72 → 76 <span class="gp">(+4)</span></td><td class="num" title="club 63/124 · FIBA 6/14">51 → 43 <span class="gp">(-8)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="raegan beers"><td class="nm">Raegan Beers</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Oklahoma Sooners</td><td class="sub">USA</td><td class="num" title="club 218/332 · FIBA 13/17">66 → 76 <span class="gp">(+11)</span></td><td class="num" title="club 419/636 · FIBA 6/14">66 → 43 <span class="gp">(-23)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="rhema collins"><td class="nm">Rhema Collins</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Florida International Panthers</td><td class="sub">Bahamas</td><td class="num" title="club 171/243 · FIBA 20/26">70 → 77 <span class="gp">(+7)</span></td><td class="num" title="club 181/375 · FIBA 31/67">48 → 46 <span class="gp">(-2)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="rhyne howard"><td class="nm">Rhyne Howard</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Atlanta Dream</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 246/538 · FIBA 5/10">46 → 50 <span class="gp">(+4)</span></td><td class="num" title="club 275/825 · FIBA 20/43">33 → 47 <span class="gp">(+13)</span></td></tr><tr data-league="ncaa" data-name="ritorya tamilo"><td class="nm">Ritorya Tamilo</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Hawaii Warriors</td><td class="sub">New Zealand</td><td class="num empty">—</td><td class="num" title="club 139/270 · FIBA 6/19">51 → 32 <span class="gp">(-20)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="sabou gueye"><td class="nm">Sabou Gueye</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Providence Friars</td><td class="sub">Senegal</td><td class="num empty">—</td><td class="num" title="club 331/676 · FIBA 8/36">49 → 22 <span class="gp">(-27)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="sara guerreiro"><td class="nm">Sara Guerreiro</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Cleveland State Vikings</td><td class="sub">Portugal</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 24/67 · FIBA 8/14">36 → 57 <span class="gp">(+21)</span></td></tr><tr data-league="wnba" data-name="sevgi uzun"><td class="nm">Sevgi Uzun</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Los Angeles Sparks</td><td class="sub">Turkey</td><td class="num empty">—</td><td class="num" title="club 31/72 · FIBA 31/73">43 → 42 <span class="gp">(-1)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="shayeann day-wilson"><td class="nm">Shayeann Day-Wilson</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">LSU Tigers</td><td class="sub">Canada</td><td class="num empty">—</td><td class="num" title="club 26/74 · FIBA 4/32">35 → 12 <span class="gp">(-23)</span></td><td class="num" title="club 12/62 · FIBA 3/14">19 → 21 <span class="gp">(+2)</span></td></tr><tr data-league="ncaa" data-name="sigrun olafsdottir"><td class="nm">Sigrun Olafsdottir</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Chattanooga Mocs</td><td class="sub">Iceland</td><td class="num empty">—</td><td class="num" title="club 35/81 · FIBA 6/8">43 → 75 <span class="gp">(+32)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="sika koné"><td class="nm">Sika Koné</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Atlanta Dream</td><td class="sub">Mali</td><td class="num" title="club 32/42 · FIBA 15/20">76 → 75 <span class="gp">(-1)</span></td><td class="num" title="club 27/60 · FIBA 36/66">45 → 55 <span class="gp">(+10)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="sira thienou"><td class="nm">Sira Thienou</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Mississippi Rebels</td><td class="sub">Mali</td><td class="num" title="club 95/133 · FIBA 5/8">71 → 62 <span class="gp">(-9)</span></td><td class="num" title="club 179/377 · FIBA 10/19">47 → 53 <span class="gp">(+5)</span></td><td class="num" title="club 54/173 · FIBA 7/21">31 → 33 <span class="gp">(+2)</span></td></tr><tr data-league="ncaa" data-name="sol castro"><td class="nm">Sol Castro</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">San Francisco Dons</td><td class="sub">Argentina</td><td class="num empty">—</td><td class="num" title="club 41/102 · FIBA 8/17">40 → 47 <span class="gp">(+7)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="sonia citron"><td class="nm">Sonia Citron</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Washington Mystics</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 319/608 · FIBA 7/11">52 → 64 <span class="gp">(+11)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="sonia citron"><td class="nm">Sonia Citron</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Notre Dame Fighting Irish</td><td class="sub">USA</td><td class="num empty">—</td><td class="num" title="club 116/209 · FIBA 7/11">56 → 64 <span class="gp">(+8)</span></td><td class="num empty">—</td></tr><tr data-league="ncaa" data-name="sumayah sugapong"><td class="nm">Sumayah Sugapong</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Arizona Wildcats</td><td class="sub">Philippines</td><td class="num" title="club 171/214 · FIBA 26/27">80 → 96 <span class="gp">(+16)</span></td><td class="num" title="club 218/576 · FIBA 11/36">38 → 31 <span class="gp">(-7)</span></td><td class="num" title="club 80/261 · FIBA 6/24">31 → 25 <span class="gp">(-6)</span></td></tr><tr data-league="ncaa" data-name="syla swords"><td class="nm">Syla Swords</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Michigan Wolverines</td><td class="sub">Canada</td><td class="num empty">—</td><td class="num" title="club 215/442 · FIBA 20/48">49 → 42 <span class="gp">(-7)</span></td><td class="num" title="club 155/449 · FIBA 26/60">35 → 43 <span class="gp">(+9)</span></td></tr><tr data-league="ncaa" data-name="tara wallack"><td class="nm">Tara Wallack</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Washington State Cougars</td><td class="sub">Canada</td><td class="num empty">—</td><td class="num" title="club 123/248 · FIBA 4/11">50 → 36 <span class="gp">(-13)</span></td><td class="num" title="club 38/131 · FIBA 5/19">29 → 26 <span class="gp">(-3)</span></td></tr><tr data-league="ncaa" data-name="tayla dalton"><td class="nm">Tayla Dalton</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Gonzaga Bulldogs</td><td class="sub">New Zealand</td><td class="num empty">—</td><td class="num" title="club 31/69 · FIBA 10/32">45 → 31 <span class="gp">(-14)</span></td><td class="num" title="club 14/43 · FIBA 4/13">33 → 31 <span class="gp">(-2)</span></td></tr><tr data-league="ncaa" data-name="taylor jones"><td class="nm">Taylor Jones</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Kentucky Christian Knights</td><td class="sub">VirginIslands</td><td class="num" title="club 108/139 · FIBA 9/13">78 → 69 <span class="gp">(-8)</span></td><td class="num" title="club 176/310 · FIBA 12/22">57 → 55 <span class="gp">(-2)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="teaira mccowan"><td class="nm">Teaira McCowan</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Minnesota Lynx</td><td class="sub">Turkey</td><td class="num empty">—</td><td class="num" title="club 43/83 · FIBA 28/39">52 → 72 <span class="gp">(+20)</span></td><td class="num empty">—</td></tr><tr data-league="wnba" data-name="teja oblak"><td class="nm">Teja Oblak</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Portland Fire</td><td class="sub">Slovenia</td><td class="num empty">—</td><td class="num" title="club 41/91 · FIBA 14/25">45 → 56 <span class="gp">(+11)</span></td><td class="num" title="club 22/60 · FIBA 4/17">37 → 24 <span class="gp">(-13)</span></td></tr><tr data-league="wnba" data-name="temi fagbenle"><td class="nm">Temi Fagbenle</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Toronto Tempo</td><td class="sub">GreatBritain</td><td class="num" title="club 46/72 · FIBA 13/19">64 → 68 <span class="gp">(+5)</span></td><td class="num" title="club 170/290 · FIBA 22/36">59 → 61 <span class="gp">(+2)</span></td><td class="num" title="club 25/101 · FIBA 4/11">25 → 36 <span class="gp">(+12)</span></td></tr><tr data-league="ncaa" data-name="tova sabel"><td class="nm">Tova Sabel</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">UC Davis Aggies</td><td class="sub">Sweden</td><td class="num empty">—</td><td class="num empty">—</td><td class="num" title="club 67/211 · FIBA 5/9">32 → 56 <span class="gp">(+24)</span></td></tr><tr data-league="ncaa" data-name="trinity san antonio"><td class="nm">Trinity San Antonio</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Grand Canyon University Antelopes</td><td class="sub">PuertoRico</td><td class="num" title="club 92/123 · FIBA 23/28">75 → 82 <span class="gp">(+7)</span></td><td class="num" title="club 190/367 · FIBA 29/69">52 → 42 <span class="gp">(-10)</span></td><td class="num" title="club 25/78 · FIBA 6/22">32 → 27 <span class="gp">(-5)</span></td></tr><tr data-league="ncaa" data-name="valentina ojeda"><td class="nm">Valentina Ojeda</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Rhode Island Rams</td><td class="sub">Chile</td><td class="num" title="club 43/60 · FIBA 16/18">72 → 89 <span class="gp">(+17)</span></td><td class="num" title="club 77/133 · FIBA 12/31">58 → 39 <span class="gp">(-19)</span></td><td class="num" title="club 50/150 · FIBA 11/33">33 → 33 <span class="gp">(+0)</span></td></tr><tr data-league="wnba" data-name="valeriane ayayi"><td class="nm">Valeriane Ayayi</td><td><span class="pill wnba">WNBA</span></td><td class="sub">Phoenix Mercury</td><td class="sub">France</td><td class="num" title="club 98/119 · FIBA 27/31">82 → 87 <span class="gp">(+5)</span></td><td class="num" title="club 33/73 · FIBA 16/31">45 → 52 <span class="gp">(+6)</span></td><td class="num" title="club 18/68 · FIBA 10/26">26 → 38 <span class="gp">(+12)</span></td></tr><tr data-league="ncaa" data-name="vanessa de jesus"><td class="nm">Vanessa De Jesus</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Notre Dame Fighting Irish</td><td class="sub">Philippines</td><td class="num" title="club 53/65 · FIBA 10/11">82 → 91 <span class="gp">(+9)</span></td><td class="num" title="club 79/175 · FIBA 24/58">45 → 41 <span class="gp">(-4)</span></td><td class="num" title="club 67/178 · FIBA 16/36">38 → 44 <span class="gp">(+7)</span></td></tr><tr data-league="ncaa" data-name="victoria gauna"><td class="nm">Victoria Gauna</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Bishops Gaiters</td><td class="sub">Argentina</td><td class="num" title="club 77/100 · FIBA 10/14">77 → 71 <span class="gp">(-6)</span></td><td class="num" title="club 101/253 · FIBA 15/43">40 → 35 <span class="gp">(-5)</span></td><td class="num" title="club 29/118 · FIBA 3/15">25 → 20 <span class="gp">(-5)</span></td></tr><tr data-league="ncaa" data-name="viktoria ranisavljevic"><td class="nm">Viktoria Ranisavljevic</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Penn State Lady Lions</td><td class="sub">Switzerland</td><td class="num empty">—</td><td class="num" title="club 19/45 · FIBA 13/26">42 → 50 <span class="gp">(+8)</span></td><td class="num" title="club 18/55 · FIBA 2/12">33 → 17 <span class="gp">(-16)</span></td></tr><tr data-league="wnba" data-name="xu han"><td class="nm">Xu Han</td><td><span class="pill wnba">WNBA</span></td><td class="sub">New York Liberty</td><td class="sub">China</td><td class="num" title="club 39/45 · FIBA 13/16">87 → 81 <span class="gp">(-5)</span></td><td class="num" title="club 77/136 · FIBA 49/89">57 → 55 <span class="gp">(-2)</span></td><td class="num" title="club 41/104 · FIBA 15/32">39 → 47 <span class="gp">(+7)</span></td></tr><tr data-league="ncaa" data-name="yirsy queliz"><td class="nm">Yirsy Queliz</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Northeastern Huskies</td><td class="sub">DominicanRepublic</td><td class="num" title="club 68/94 · FIBA 3/10">72 → 30 <span class="gp">(-42)</span></td><td class="num" title="club 119/320 · FIBA 9/28">37 → 32 <span class="gp">(-5)</span></td><td class="num" title="club 94/314 · FIBA 8/26">30 → 31 <span class="gp">(+1)</span></td></tr><tr data-league="ncaa" data-name="yvonne ejim"><td class="nm">Yvonne Ejim</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Gonzaga Bulldogs</td><td class="sub">Canada</td><td class="num" title="club 152/193 · FIBA 9/13">79 → 69 <span class="gp">(-10)</span></td><td class="num" title="club 268/483 · FIBA 15/32">55 → 47 <span class="gp">(-9)</span></td><td class="num" title="club 12/44 · FIBA 5/10">27 → 50 <span class="gp">(+23)</span></td></tr><tr data-league="ncaa" data-name="zaida gonzalez"><td class="nm">Zaida Gonzalez</td><td><span class="pill ncaa">NCAA</span></td><td class="sub">Stony Brook Seawolves</td><td class="sub">PuertoRico</td><td class="num" title="club 63/82 · FIBA 4/11">77 → 36 <span class="gp">(-40)</span></td><td class="num" title="club 140/336 · FIBA 20/49">42 → 41 <span class="gp">(-1)</span></td><td class="num" title="club 38/153 · FIBA 7/21">25 → 33 <span class="gp">(+8)</span></td></tr></tbody>
+  </table></div>
+  <p class="note">Each cell reads club rate &rarr; FIBA rate, with the gap in
+  brackets. Hover for the underlying makes and attempts. Minimum sample to
+  qualify: 40 club attempts and 8 FIBA
+  attempts.</p>
+</section>
+
+<section>
+  <h2>What this rests on</h2>
+  <div class="row2">
+    <div>
+      <h4>Senior FIBA competitions used</h4>
+      <div class="tbl-wrap" style="max-height:300px"><table>
+        <thead><tr><th>Competition</th><th class="num">Players</th></tr></thead>
+        <tbody><tr><td>FIBA Eurobasket Qualifications ( W )</td><td class="num">481</td></tr><tr><td>FIBA World Cup Qualifying Tournaments ( W )</td><td class="num">288</td></tr><tr><td>FIBA World Championships ( W )</td><td class="num">190</td></tr><tr><td>FIBA AfroBasket Championship ( W )</td><td class="num">113</td></tr><tr><td>FIBA EuroBasket ( W )</td><td class="num">110</td></tr><tr><td>FIBA Asia Cup div B ( W )</td><td class="num">93</td></tr><tr><td>Olympic Pre-Qualifying Tournament ( W )</td><td class="num">93</td></tr><tr><td>Fiba Centrobasket Qualifiers W</td><td class="num">83</td></tr><tr><td>Fiba AmeriCup Quailifiers ( W )</td><td class="num">83</td></tr><tr><td>FIBA Central American COCABA Championship ( W )</td><td class="num">82</td></tr><tr><td>FIBA AmeriCup ( W )</td><td class="num">78</td></tr><tr><td>FIBA Eurobasket for Small Countries ( W )</td><td class="num">72</td></tr><tr><td>FIBA Asia Cup ( W )</td><td class="num">58</td></tr></tbody>
+      </table></div>
+      <p class="note">Youth brackets (U16&ndash;U23, 3x3) and University Games
+      excluded. Women's basketball throughout.</p>
+    </div>
+    <div>
+      <h4>Known defects, found and handled</h4>
+      <ul>
+        <li><span class="flag">fixed</span>The club leaderboard silently capped
+        responses at the page limit, returning exactly 4,096 NCAA records per
+        season. Paging to exhaustion returns over 20,000. Coefficients moved by
+        less than half a point, which is a useful robustness check.</li>
+        <li><span class="flag">dropped</span>Field goals. The club endpoint's
+        <code>fgMade/fgAttempt</code> are not field goals: A'ja Wilson's 2025
+        season reads 950/1940 against a true 2PM+3PM of 459/931. The points
+        identity closes on the explicit shot fields and not at all on the fg
+        ones. The FIBA endpoint is unaffected.</li>
+        <li><span class="flag">fixed</span>Inverse-variance weights were
+        computed from each player's own observed rate, so an 8-for-8 line gave
+        a variance of zero and an exploding weight. Weights now depend on
+        sample size alone.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Limitations</h2>
+  <ul>
+    <li><strong>Cell sizes are 39&ndash;89 players.</strong> The three-point
+    difference does not clear zero and is not a result.</li>
+    <li><strong>Players are matched by name, not id.</strong> See the audit
+    table; the pairs are not individually hand-verified.</li>
+    <li><strong>Selection.</strong> Players who reach a national team are not a
+    random sample of their league, and those who play enough FIBA minutes to
+    qualify are a further cut.</li>
+    <li><strong>The environment offset rests on one control statistic</strong>,
+    with a wide interval. League differences do not depend on it; the adjusted
+    per-league figures do.</li>
+    <li><strong>Shooting only.</strong> Assists, rebounds and steals are not
+    available from the endpoint used.</li>
+    <li><strong>Season pairing is coarse</strong> &mdash; club seasons are
+    matched to tournaments by year rather than by sequence.</li>
+    <li><strong>Intervals are approximate.</strong> The shrunk estimate's
+    variance treats its two components as independent and ignores uncertainty
+    in the between-league variance.</li>
+  </ul>
+</section>
+
+<footer>
+  Data: Synergy Sports. Raw data is licensed and not redistributed.
+  Source: <a href="https://github.com/jordanngo205/fiba-league-translation">github.com/jordanngo205/fiba-league-translation</a>
+</footer>
+</div>
+
+<script>
+// tooltip, shared by every chart
+const tip = document.getElementById('tip');
+document.addEventListener('mouseover', e => {
+  const t = e.target.closest('[data-tip]');
+  if (!t) return;
+  tip.textContent = t.getAttribute('data-tip');
+  tip.style.opacity = 1;
+});
+document.addEventListener('mousemove', e => {
+  if (tip.style.opacity === '0' || !tip.style.opacity) return;
+  const r = tip.getBoundingClientRect();
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - 14;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - 14;
+  tip.style.left = x + 'px'; tip.style.top = y + 'px';
+});
+document.addEventListener('mouseout', e => {
+  if (e.target.closest('[data-tip]')) tip.style.opacity = 0;
+});
+
+// scatter statistic switch
+document.querySelectorAll('[data-scat]').forEach(b => {
+  b.addEventListener('click', () => {
+    const s = b.dataset.scat;
+    document.querySelectorAll('[data-scat]').forEach(o =>
+      o.setAttribute('aria-pressed', String(o === b)));
+    document.querySelectorAll('.scat-wrap').forEach(w =>
+      w.hidden = (w.dataset.stat !== s));
+  });
+});
+
+// audit table filters
+const q = document.getElementById('q'), lgf = document.getElementById('lgf'),
+      cnt = document.getElementById('cnt'),
+      rows = [...document.querySelectorAll('#tb tr')];
+function filt() {
+  const s = q.value.trim().toLowerCase(), l = lgf.value;
+  let n = 0;
+  rows.forEach(r => {
+    const ok = (!s || r.dataset.name.includes(s)) &&
+               (!l || r.dataset.league === l);
+    r.hidden = !ok; if (ok) n++;
+  });
+  cnt.textContent = n + ' of ' + rows.length + ' players';
+}
+q.addEventListener('input', filt); lgf.addEventListener('change', filt); filt();
+</script>
+</body>
+</html>

@@ -42,8 +42,8 @@ result.
 
 ## What the control revealed
 
-The free-throw gap was **not** near zero. It came out at −3.1 points for the
-NCAA and −3.2 for the WNBA: a drop of about three points in both leagues.
+The free-throw gap was **not** near zero. It came out at -3.3 points for the
+NCAA and -3.2 for the WNBA: a drop of about three points in both leagues.
 
 That cannot be league difficulty, because nobody defends a free throw. It is a
 flat cost of playing FIBA at all — travel, unfamiliar teammates, a different
@@ -59,32 +59,41 @@ That difference is also the quantity a selector actually needs, since the
 question is how an NCAA season compares with a WNBA season — not how either
 compares with a tournament nobody is choosing between.
 
-On the difference scale the control passes: the NCAA and WNBA free-throw gaps
-differ by **+0.1 points**.
+On the difference scale the control passes, at **-0.1 points**.
 
 ## Results
 
-185 players matched across both environments (103 WNBA, 82 NCAA).
+260 players matched across both environments
+(151 NCAA, 109 WNBA);
+172 clear the minimum-sample thresholds and enter a coefficient.
 
-| Statistic | NCAA (adj.) | WNBA (adj.) | NCAA − WNBA |
-|---|---|---|---|
-| Free throw | +0.0 | +0.0 | **+0.1** ← control |
-| Two point | −2.3 | +4.1 | **−7.4** |
-| Three point | +1.4 | +4.2 | **−3.5** |
-| Field goal | −0.7 | +7.3 | **−6.9** |
+| Statistic | NCAA (adj.) | WNBA (adj.) | NCAA − WNBA | 95% CI | |
+|---|---|---|---|---|---|
+| Free Throw | +0.0 | +0.0 | **-0.1** | -4.4 to +4.3 | control |
+| Two Point | -2.4 | +4.8 | **-8.4** | -11.5 to -5.3 | **excludes zero** |
+| Three Point | +1.3 | +4.6 | **-3.6** | -7.5 to +0.2 | crosses zero |
 
-Adjusted figures have the −2.5 point FIBA environment offset removed.
+Adjusted figures have the -2.4 point FIBA environment offset removed.
+The difference column does not depend on that adjustment.
 
-**Reading:** an NCAA season overstates a player's finishing by roughly seven
-points of two-point percentage relative to a WNBA season, but only about three
-and a half points of three-point percentage. Perimeter shooting travels. Interior
-scoring does not — unsurprising once the defenders are grown professionals.
+**What can be claimed.** An NCAA season overstates a player's two-point shooting
+by roughly eight points relative to a WNBA season, and that interval is clear of
+zero. The three-point difference is smaller and its interval **crosses zero**, so
+on this sample it cannot be distinguished from no difference at all and is not a
+result. The contrast between the two — interior scoring translating much worse
+than perimeter shooting — is the suggestive part, but only one half of it is
+established.
+
+**The control deserves the same scepticism.** Passing at -0.1 sounds clean, but its
+interval spans about nine points: it could not have detected an offset difference
+the size of the three-point effect. It bounds the method loosely, not tightly.
 
 ## Limitations
 
 Stated plainly, because they bound what the numbers can be used for.
 
-- **Cell sizes are 39–78 players.** The three-point figure is the softest.
+- **Cell sizes are 43–89 players.** The three-point difference does not
+  clear zero and is not a result.
 - **Players are matched by name, not ID.** Synergy issues a different player id
   per league, so the join is on normalised name. Pairs are written to
   `data/translation/matched_pairs.json` for inspection; the dashboard exposes
@@ -97,6 +106,13 @@ Stated plainly, because they bound what the numbers can be used for.
   adjusted columns. The league *differences* do not depend on it.
 - **Counting stats are absent.** Assists, rebounds and steals are not available
   from the endpoint used, so this covers shooting only.
+- **Field goals are excluded.** The club endpoint's `fgMade`/`fgAttempt` are not
+  field goals — A'ja Wilson's 2025 season reads 950/1940 against a true 2PM+3PM
+  of 459/931, and the points identity closes only on the explicit shot fields.
+  Two- and three-pointers use those verified fields and are unaffected.
+- **Intervals are approximate.** The shrunk estimate's variance treats its two
+  components as independent and ignores uncertainty in the between-league
+  variance.
 - **Season pairing is coarse.** Club seasons are matched to tournaments by year
   rather than by what preceded what.
 
