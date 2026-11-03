@@ -91,7 +91,8 @@ def shrink_groups(groups):
             continue
         means[lg] = (sum(g / v for g, v in lst if v > 0) / w, 1 / w)
     if len(means) < 2:
-        return {lg: (m, len(groups[lg]), m) for lg, (m, _) in means.items()}
+        return {lg: (m, len(groups[lg]), m, 1.0, math.sqrt(v), math.sqrt(v))
+                for lg, (m, v) in means.items()}
 
     Q = sum((m - mu) ** 2 / v for m, v in means.values())
     df = len(means) - 1
@@ -99,10 +100,19 @@ def shrink_groups(groups):
         sum(1 / v ** 2 for _, v in means.values()) / sum(1 / v for _, v in means.values())
     tau2 = max(0.0, (Q - df) / c) if c > 0 else 0.0
 
+    var_mu = 1 / W if W > 0 else 0.0
     out = {}
     for lg, (m, v) in means.items():
         w = tau2 / (tau2 + v) if (tau2 + v) > 0 else 0.0   # weight on own data
-        out[lg] = (w * m + (1 - w) * mu, len(groups[lg]), m, w)
+        # Standard error of the shrunk estimate. The shrunk value is a blend of
+        # the league's own mean and the global mean, so its variance blends the
+        # two as well. Treating them as independent slightly understates the
+        # result and it ignores uncertainty in tau2 itself, so these intervals
+        # are approximate -- but a shrunk point estimate with no interval at all
+        # invites being read as precise, which is worse.
+        se = math.sqrt(w * w * v + (1 - w) * (1 - w) * var_mu)
+        out[lg] = (w * m + (1 - w) * mu, len(groups[lg]), m, w,
+                   se, math.sqrt(v))
     return out
 
 
@@ -138,7 +148,7 @@ def main():
 
     print(f"\n{'statistic':13} {'league':6} {'n':>4} {'club':>7} {'FIBA':>7} "
           f"{'raw gap':>8} {'shrunk':>8} {'own wt':>7}")
-    keep, raws, cells, players = {}, {}, [], []
+    keep, raws, cells, players, ses = {}, {}, [], [], {}
     for label, made, att in SHOOTING:
         groups = defaultdict(list)
         cell = {}
@@ -187,13 +197,20 @@ def main():
                 continue
             shrunk, _, raw = r[0], r[1], r[2]
             w = r[3] if len(r) > 3 else 1.0
+            se_shrunk = r[4] if len(r) > 4 else 0.0
+            se_raw = r[5] if len(r) > 5 else 0.0
+            ses[(label, lg)] = (se_shrunk, se_raw)
             print(f'{label:13} {lg:6} {n:4} {100*cl:6.1f}% {100*fb:6.1f}% '
                   f'{100*(fb-cl):+7.1f} {100*shrunk:+7.1f} {w:6.0%}')
             keep[(label, lg)] = shrunk
             raws[(label, lg)] = fb - cl
             cells.append({'stat': label, 'league': lg, 'n': n,
                           'club': cl, 'fiba': fb, 'raw_gap': fb - cl,
-                          'shrunk': shrunk, 'own_weight': w})
+                          'shrunk': shrunk, 'own_weight': w,
+                          'se_shrunk': se_shrunk, 'se_raw': se_raw,
+                          'ci_lo': shrunk - 1.96 * se_shrunk,
+                          'ci_hi': shrunk + 1.96 * se_shrunk,
+                          'is_control': label == 'free throw'})
 
     # ---- what the placebo forces us to do -------------------------------
     #
@@ -227,9 +244,17 @@ def main():
             tag = '   <- placebo, should be ~0' if label == 'free throw' else ''
             print(f'{label:13} {100*(a-offset):+8.1f}  {100*(b-offset):+8.1f}  '
                   f'{100*(a-b):+9.1f} {100*(ra-rb):+9.1f}{tag}')
+            # The difference cancels the shared FIBA offset, so it needs no
+            # adjustment and no assumption about the control. Its interval comes
+            # from the two leagues' own standard errors.
+            sa, sb = ses[(label, 'ncaa')][1], ses[(label, 'wnba')][1]
+            se_d = math.sqrt(sa * sa + sb * sb)
             diffs.append({'stat': label,
                           'ncaa_adj': a - offset, 'wnba_adj': b - offset,
                           'diff_shrunk': a - b, 'diff_raw': ra - rb,
+                          'se_diff': se_d,
+                          'diff_ci_lo': (ra - rb) - 1.96 * se_d,
+                          'diff_ci_hi': (ra - rb) + 1.96 * se_d,
                           'is_control': label == 'free throw'})
 
     # Write results out so the dashboard is rendered from data rather than from
