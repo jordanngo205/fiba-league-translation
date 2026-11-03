@@ -1,0 +1,205 @@
+#!/usr/bin/env python3
+"""Per-statistic league translation coefficients, with shrinkage at two levels.
+
+Level 1  a player's own gap between club and FIBA, weighted by her sample
+Level 2  a league's coefficient, shrunk toward the global mean across leagues
+
+Level 2 is the part that matters when a league sends three players. A raw mean
+of three noisy gaps is not a coefficient; shrinking it toward the global mean in
+proportion to its precision is the same idea used on the players, one level up.
+This is a random-effects meta-analysis, and the estimator is the one Efron and
+Morris demonstrated on group means.
+
+Only efficiency is compared, never volume. A player's role changes between club
+and national team, and counting production would absorb that as though it were
+league quality.
+
+Free throws are the placebo. Same rim, same distance, nobody guarding: the gap
+should be near zero. If it is not, the model is measuring something other than
+league difficulty and no other coefficient should be believed.
+"""
+import json, math, re
+from collections import defaultdict
+import sys
+from pathlib import Path
+
+DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(DIR))
+from paths import DATA as T  # noqa: E402
+
+# (label, made, attempted). Free throws first: it is the check, not a result.
+SHOOTING = [('free throw', 'freeThrowsMade', 'freeThrowsAttempted'),
+            ('two point',  'twoPtsMade',     'twoPtsAttempted'),
+            ('three point','threePtsMade',   'threePtsAttempted'),
+            ('field goal', 'fieldGoalsMade', 'fieldGoalsAttempted')]
+
+MIN_CLUB_ATT = 40      # club sample needed before a player's gap means anything
+MIN_FIBA_ATT = 8
+
+
+def norm(n):
+    return re.sub(r'[^a-z]', '', (n or '').lower())
+
+
+def pooled(rows, made, att):
+    m = sum(r[made] for r in rows)
+    a = sum(r[att] for r in rows)
+    return (m / a if a else None), a
+
+
+def shrink_groups(groups):
+    """Random-effects pooling of per-league gaps.
+
+    groups: {league: [(gap, variance), ...]}
+    Returns {league: (shrunk gap, n, raw gap)}.
+
+    tau2 is the spread of true league effects, estimated by DerSimonian-Laird.
+    Where it is near zero the leagues are indistinguishable and everything
+    collapses to the global mean, which is the correct answer rather than a
+    failure: it says the data cannot tell the leagues apart.
+    """
+    flat = [(g, v) for lst in groups.values() for g, v in lst]
+    if not flat:
+        return {}
+    # global mean, inverse-variance weighted
+    W = sum(1 / v for _, v in flat if v > 0)
+    mu = sum(g / v for g, v in flat if v > 0) / W
+
+    # between-league variance
+    means = {}
+    for lg, lst in groups.items():
+        w = sum(1 / v for _, v in lst if v > 0)
+        if w <= 0:
+            continue
+        means[lg] = (sum(g / v for g, v in lst if v > 0) / w, 1 / w)
+    if len(means) < 2:
+        return {lg: (m, len(groups[lg]), m) for lg, (m, _) in means.items()}
+
+    Q = sum((m - mu) ** 2 / v for m, v in means.values())
+    df = len(means) - 1
+    c = sum(1 / v for _, v in means.values()) - \
+        sum(1 / v ** 2 for _, v in means.values()) / sum(1 / v for _, v in means.values())
+    tau2 = max(0.0, (Q - df) / c) if c > 0 else 0.0
+
+    out = {}
+    for lg, (m, v) in means.items():
+        w = tau2 / (tau2 + v) if (tau2 + v) > 0 else 0.0   # weight on own data
+        out[lg] = (w * m + (1 - w) * mu, len(groups[lg]), m, w)
+    return out
+
+
+def main():
+    fiba = json.load(open(T / 'fiba_senior.json'))
+    clubs = {}
+    for lg in ('wnba', 'ncaa'):
+        idx = defaultdict(lambda: defaultdict(float))
+        for v in json.load(open(T / f'{lg}_players.json')).values():
+            k = norm(v['name'])
+            for f, val in v.items():
+                if isinstance(val, (int, float)):
+                    idx[k][f] += val
+            idx[k]['_name'] = v['name']
+            idx[k]['_team'] = v['team']
+        clubs[lg] = idx
+
+    # pool a player's FIBA lines across competitions
+    f_idx = defaultdict(lambda: defaultdict(float))
+    for v in fiba.values():
+        k = norm(v['name'])
+        for f, val in v.items():
+            if isinstance(val, (int, float)):
+                f_idx[k][f] += val
+        f_idx[k]['_name'] = v['name']
+        f_idx[k]['_nation'] = v['nation']
+
+    pairs = [(lg, f_idx[k], clubs[lg][k]) for k in f_idx
+             for lg in clubs if k in clubs[lg]]
+    print(f'matched players: {len(pairs)}')
+    for lg in clubs:
+        print(f'   {lg}: {sum(1 for p in pairs if p[0] == lg)}')
+
+    print(f"\n{'statistic':13} {'league':6} {'n':>4} {'club':>7} {'FIBA':>7} "
+          f"{'raw gap':>8} {'shrunk':>8} {'own wt':>7}")
+    keep, raws = {}, {}
+    for label, made, att in SHOOTING:
+        groups = defaultdict(list)
+        cell = {}
+        subs = {}
+        for lg in clubs:
+            sub = [(f, c) for l, f, c in pairs if l == lg
+                   and c[att] >= MIN_CLUB_ATT and f[att] >= MIN_FIBA_ATT]
+            if len(sub) >= 3:
+                subs[lg] = sub
+
+        # One pooled rate for the whole statistic, used only to build the
+        # weights. Using each player's OWN observed rate here is a trap: a
+        # player who went 8/8 in FIBA has an observed rate of 1.0, so her
+        # p(1-p) term is exactly zero, her variance collapses and her
+        # inverse-variance weight explodes. Players at 0% do the same. The
+        # extremes then dominate the mean in both directions, which is what
+        # made free throws read +4.9 against a raw gap of -3.1.
+        # Weights must depend on sample size, not on how the sample landed.
+        all_rows = [r for sub in subs.values() for pair in sub for r in pair]
+        pbar = pooled(all_rows, made, att)[0] or 0.5
+        pq = pbar * (1 - pbar)
+
+        for lg, sub in subs.items():
+            for f, c in sub:
+                cr, ca = f[made] / f[att], f[att]
+                kr, ka = c[made] / c[att], c[att]
+                gap = cr - kr
+                # variance of a difference of two proportions, evaluated at the
+                # common rate so the weight is a function of attempts alone
+                var = pq * (1 / ca + 1 / ka)
+                groups[lg].append((gap, max(var, 1e-9)))
+            cell[lg] = (len(sub),
+                        pooled([c for _, c in sub], made, att)[0],
+                        pooled([f for f, _ in sub], made, att)[0])
+        res = shrink_groups(groups)
+        for lg in sorted(cell):
+            n, cl, fb = cell[lg]
+            r = res.get(lg)
+            if not r:
+                continue
+            shrunk, _, raw = r[0], r[1], r[2]
+            w = r[3] if len(r) > 3 else 1.0
+            print(f'{label:13} {lg:6} {n:4} {100*cl:6.1f}% {100*fb:6.1f}% '
+                  f'{100*(fb-cl):+7.1f} {100*shrunk:+7.1f} {w:6.0%}')
+            keep[(label, lg)] = shrunk
+            raws[(label, lg)] = fb - cl
+
+    # ---- what the placebo forces us to do -------------------------------
+    #
+    # The free-throw gap came out near -3 points in BOTH leagues. Nobody
+    # guards a free throw, so that cannot be league difficulty. It is a
+    # common cost of playing FIBA at all -- travel, unfamiliar teammates, a
+    # different ball, less rest -- and it sits on every absolute gap alike.
+    #
+    # So the absolute gaps are not interpretable as league strength, but the
+    # DIFFERENCE between two leagues is: the shared offset cancels. That is
+    # the number the roster decision needs anyway, since it asks how an NCAA
+    # season compares with a WNBA season, not how either compares with FIBA.
+    base = keep.get(('free throw', 'ncaa')), keep.get(('free throw', 'wnba'))
+    if all(b is not None for b in base):
+        offset = sum(base) / 2
+        print(f"\nFIBA environment offset, from the free-throw placebo: "
+              f"{100*offset:+.1f} pts")
+        print('Absolute gaps carry this offset; league differences do not.\n')
+        print(f"{'statistic':13} {'NCAA adj':>9} {'WNBA adj':>9} "
+              f"{'diff(shr)':>10} {'diff(raw)':>10}")
+        for label, _, _ in SHOOTING:
+            a, b = keep.get((label, 'ncaa')), keep.get((label, 'wnba'))
+            if a is None or b is None:
+                continue
+            # Report the RAW league difference as well. Where shrinkage put 0%
+            # weight on a league's own data both leagues collapse to the same
+            # pooled value, so the shrunk difference is forced to zero and is
+            # no longer an independent check. The raw difference still is.
+            ra, rb = raws[(label, 'ncaa')], raws[(label, 'wnba')]
+            tag = '   <- placebo, should be ~0' if label == 'free throw' else ''
+            print(f'{label:13} {100*(a-offset):+8.1f}  {100*(b-offset):+8.1f}  '
+                  f'{100*(a-b):+9.1f} {100*(ra-rb):+9.1f}{tag}')
+
+
+if __name__ == '__main__':
+    main()
