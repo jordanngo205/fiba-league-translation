@@ -1,5 +1,59 @@
 {
  "fitted_on": "2026-11-02",
+ "competitions": [
+  {
+   "competition": "FIBA Eurobasket Qualifications ( W )",
+   "players": 481
+  },
+  {
+   "competition": "FIBA World Cup Qualifying Tournaments ( W )",
+   "players": 288
+  },
+  {
+   "competition": "FIBA World Championships ( W )",
+   "players": 190
+  },
+  {
+   "competition": "FIBA AfroBasket Championship ( W )",
+   "players": 113
+  },
+  {
+   "competition": "FIBA EuroBasket ( W )",
+   "players": 110
+  },
+  {
+   "competition": "FIBA Asia Cup div B ( W )",
+   "players": 93
+  },
+  {
+   "competition": "Olympic Pre-Qualifying Tournament ( W )",
+   "players": 93
+  },
+  {
+   "competition": "Fiba Centrobasket Qualifiers W",
+   "players": 83
+  },
+  {
+   "competition": "Fiba AmeriCup Quailifiers ( W )",
+   "players": 83
+  },
+  {
+   "competition": "FIBA Central American COCABA Championship ( W )",
+   "players": 82
+  },
+  {
+   "competition": "FIBA AmeriCup ( W )",
+   "players": 78
+  },
+  {
+   "competition": "FIBA Eurobasket for Small Countries ( W )",
+   "players": 72
+  },
+  {
+   "competition": "FIBA Asia Cup ( W )",
+   "players": 58
+  }
+ ],
  "offset": -0.0239545723634776,
  "cells": [
   {

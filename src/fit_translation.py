@@ -20,7 +20,7 @@ league difficulty and no other coefficient should be believed.
 """
 import json, math, re, unicodedata
 from datetime import date
-from collections import defaultdict
+from collections import Counter, defaultdict
 import sys
 from pathlib import Path
 
@@ -125,6 +125,21 @@ def shrink_groups(groups):
         out[lg] = (w * m + (1 - w) * mu, len(groups[lg]), m, w,
                    se, math.sqrt(v))
     return out
+
+
+def competition_counts():
+    """Players per senior competition, from the raw FIBA scrape.
+
+    Recorded into the fit output so the dashboard can render the table without
+    the raw file, which is gitignored because the data is licensed. A page that
+    needs an untracked input cannot be rebuilt by CI or by anyone cloning the
+    repo.
+    """
+    path = T / 'fiba_senior.json'
+    if not path.exists():
+        return []
+    c = Counter(v['competition'] for v in json.load(open(path)).values())
+    return [{'competition': k, 'players': n} for k, n in c.most_common()]
 
 
 def load_pairs():
@@ -290,6 +305,7 @@ def fit(pairs, leagues, min_club=MIN_CLUB_ATT, min_fiba=MIN_FIBA_ATT,
                           'is_control': label == 'free throw'})
 
     return {'fitted_on': date.today().isoformat(),
+            'competitions': competition_counts(),
             'offset': offset, 'cells': cells, 'diffs': diffs,
             'players': players,
             'matched': {'total': len(pairs),

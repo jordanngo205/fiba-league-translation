@@ -10,7 +10,7 @@ GitHub Pages and should not need a CDN to render a coefficient plot.
 import json
 import re
 import sys
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 
 DIR = Path(__file__).resolve().parent
@@ -175,11 +175,7 @@ def main():
     cells = {(c['stat'], c['league']): c for c in co['cells']}
     diffs = {d['stat']: d for d in co['diffs']}
 
-    comps = {}
-    fs = DATA / 'fiba_senior.json'
-    if fs.exists():
-        raw = json.load(open(fs))
-        comps = Counter(v['competition'] for v in raw.values())
+    comps = co.get('competitions', [])
 
     # ---- headline tiles ---------------------------------------------------
     tiles = []
@@ -266,8 +262,8 @@ def main():
         for s in ORDER)
 
     comp_rows = ''.join(
-        f'<tr><td>{esc(k)}</td><td class="num">{v}</td></tr>'
-        for k, v in comps.most_common())
+        f'<tr><td>{esc(c["competition"])}</td>'
+        f'<td class="num">{c["players"]}</td></tr>' for c in comps)
 
     # Dated from the fit, never from the clock: the page is a committed build
     # artefact and CI fails it if a rebuild differs, so today's date would make
