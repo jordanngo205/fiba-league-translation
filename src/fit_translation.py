@@ -19,6 +19,7 @@ should be near zero. If it is not, the model is measuring something other than
 league difficulty and no other coefficient should be believed.
 """
 import json, math, re, unicodedata
+from datetime import date
 from collections import defaultdict
 import sys
 from pathlib import Path
@@ -288,7 +289,8 @@ def fit(pairs, leagues, min_club=MIN_CLUB_ATT, min_fiba=MIN_FIBA_ATT,
                           'diff_ci_hi': (ra - rb) + 1.96 * se_d,
                           'is_control': label == 'free throw'})
 
-    return {'offset': offset, 'cells': cells, 'diffs': diffs,
+    return {'fitted_on': date.today().isoformat(),
+            'offset': offset, 'cells': cells, 'diffs': diffs,
             'players': players,
             'matched': {'total': len(pairs),
                         'by_league': {lg: sum(1 for p in pairs if p[0] == lg)

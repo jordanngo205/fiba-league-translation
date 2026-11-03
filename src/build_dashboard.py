@@ -11,7 +11,6 @@ import json
 import re
 import sys
 from collections import Counter, defaultdict
-from datetime import date
 from pathlib import Path
 
 DIR = Path(__file__).resolve().parent
@@ -270,6 +269,10 @@ def main():
         f'<tr><td>{esc(k)}</td><td class="num">{v}</td></tr>'
         for k, v in comps.most_common())
 
+    # Dated from the fit, never from the clock: the page is a committed build
+    # artefact and CI fails it if a rebuild differs, so today's date would make
+    # it stale every midnight.
+    built = co.get('fitted_on') or 'unknown'
     n_qual = len({(p['name'], p['league']) for p in pairs})
     # ---- robustness ------------------------------------------------------
     thr_html = infl_html = comp_html = ''
@@ -467,7 +470,7 @@ a {{ color:var(--s-ncaa) }}
   coefficient per shooting statistic per league.</p>
   <div class="meta">{n_tot} players matched across both environments
   ({by_lg.get('ncaa', 0)} NCAA, {by_lg.get('wnba', 0)} WNBA) ·
-  senior FIBA 2025&ndash;2026 · built {date.today().isoformat()}</div>
+  senior FIBA 2025&ndash;2026 · fitted {built}</div>
 </header>
 
 <section>
