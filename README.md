@@ -88,6 +88,44 @@ established.
 interval spans about nine points: it could not have detected an offset difference
 the size of the three-point effect. It bounds the method loosely, not tightly.
 
+## Robustness
+
+A coefficient that exists only at one arbitrary sample threshold is not a
+finding. `src/robustness.py` re-fits everything under three kinds of pressure.
+
+**Minimum sample.** The default FIBA minimum of eight attempts is low enough
+that one tournament can qualify a player. Re-fitting at stricter cutoffs:
+
+| min club | min FIBA | Two point | Three point |
+|---|---|---|---|
+| 40 | 8 | -8.4 [-11.5, -5.3] | -3.6 [-7.5, +0.2] |
+| 40 | 15 | -7.6 [-10.8, -4.4] | -3.3 [-7.6, +0.9] |
+| 40 | 25 | -7.1 [-10.5, -3.6] | -2.8 [-8.2, +2.6] |
+| 100 | 15 | -7.0 [-10.4, -3.6] | -3.9 [-8.6, +0.7] |
+| 200 | 15 | -9.9 [-13.9, -6.0] | -1.9 [-7.7, +4.0] |
+| 200 | 25 | -9.2 [-13.5, -4.9] | -1.6 [-8.4, +5.3] |
+
+The two-point difference excludes zero at every cutoff. The three-point
+difference crosses zero at every one, which settles it as a non-result rather
+than a borderline one. The control degrades at the strictest cutoffs, where it
+is down to a handful of players — it bounds the method only where it has sample.
+
+**Influence.** Leave-one-player-out, refitting once per removed player: the
+two-point difference moves by at most 0.51 points across
+260 refits, and the three-point difference by at most
+0.67. No single player carries either result.
+
+**Is the offset really one number?** This is the uncomfortable one. The method
+assumes a single FIBA environment offset, but estimated per competition the
+free-throw gap runs from +3.1 at FIBA Eurobasket Qualifications
+to -5.9 at Olympic Pre-Qualifying Tournament — a spread of about
+9 points around a pooled -2.4.
+
+The offset looks like a property of the event rather than of FIBA. That
+**weakens the adjusted per-league columns** and leaves the **league differences
+untouched**, since a difference cancels whatever the offset is. It is a stronger
+reason to lead with the differences than the control alone provided.
+
 ## Limitations
 
 Stated plainly, because they bound what the numbers can be used for.
@@ -101,9 +139,10 @@ Stated plainly, because they bound what the numbers can be used for.
 - **Selection.** Players who reach a national team are not a random sample of
   their league, and the ones who play enough FIBA minutes to qualify are a
   further cut.
-- **The environment offset is estimated from one control statistic.** A −2.5
-  point correction resting on free throws alone is the weakest link in the
-  adjusted columns. The league *differences* do not depend on it.
+- **The environment offset is not one number.** Estimated per competition it
+  spans about nine points, so a single pooled correction is papering over real
+  heterogeneity. This is the weakest link in the adjusted per-league columns.
+  The league *differences* do not depend on it at all.
 - **Counting stats are absent.** Assists, rebounds and steals are not available
   from the endpoint used, so this covers shooting only.
 - **Field goals are excluded.** The club endpoint's `fgMade`/`fgAttempt` are not
