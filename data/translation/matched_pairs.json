@@ -47,6 +47,36 @@
  {
   "stat": "free throw",
   "league": "wnba",
+  "name": "Janelle Sala\u00fcn",
+  "fiba_name": "Janelle Salaun",
+  "team": "Golden State Valkyries",
+  "nation": "France",
+  "club_made": 140.0,
+  "club_att": 176.0,
+  "club_rate": 0.7954545454545454,
+  "fiba_made": 20.0,
+  "fiba_att": 25.0,
+  "fiba_rate": 0.8,
+  "gap": 0.00454545454545463
+ },
+ {
+  "stat": "free throw",
+  "league": "wnba",
+  "name": "Le\u00efla Lacan",
+  "fiba_name": "Leila Lacan",
+  "team": "Connecticut Sun",
+  "nation": "France",
+  "club_made": 86.0,
+  "club_att": 110.0,
+  "club_rate": 0.7818181818181819,
+  "fiba_made": 17.0,
+  "fiba_att": 20.0,
+  "fiba_rate": 0.85,
+  "gap": 0.06818181818181812
+ },
+ {
+  "stat": "free throw",
+  "league": "wnba",
   "name": "Marine Johannes",
   "fiba_name": "Marine Johannes",
   "team": "New York Liberty",
@@ -133,6 +163,21 @@
   "fiba_att": 35.0,
   "fiba_rate": 0.8285714285714286,
   "gap": -0.0032042723631507952
+ },
+ {
+  "stat": "free throw",
+  "league": "wnba",
+  "name": "Temi Fagbenle",
+  "fiba_name": "Temi Fagbenle",
+  "team": "Toronto Tempo",
+  "nation": "GreatBritain",
+  "club_made": 46.0,
+  "club_att": 72.0,
+  "club_rate": 0.6388888888888888,
+  "fiba_made": 13.0,
+  "fiba_att": 19.0,
+  "fiba_rate": 0.6842105263157895,
+  "gap": 0.04532163742690065
  },
  {
   "stat": "free throw",
@@ -523,6 +568,21 @@
   "fiba_att": 16.0,
   "fiba_rate": 0.8125,
   "gap": -0.054166666666666696
+ },
+ {
+  "stat": "free throw",
+  "league": "wnba",
+  "name": "Sika Kon\u00e9",
+  "fiba_name": "Sika Kone",
+  "team": "Atlanta Dream",
+  "nation": "Mali",
+  "club_made": 32.0,
+  "club_att": 42.0,
+  "club_rate": 0.7619047619047619,
+  "fiba_made": 15.0,
+  "fiba_att": 20.0,
+  "fiba_rate": 0.75,
+  "gap": -0.011904761904761862
  },
  {
   "stat": "free throw",
@@ -1352,6 +1412,36 @@
  {
   "stat": "two point",
   "league": "wnba",
+  "name": "Janelle Sala\u00fcn",
+  "fiba_name": "Janelle Salaun",
+  "team": "Golden State Valkyries",
+  "nation": "France",
+  "club_made": 169.0,
+  "club_att": 372.0,
+  "club_rate": 0.4543010752688172,
+  "fiba_made": 25.0,
+  "fiba_att": 34.0,
+  "fiba_rate": 0.7352941176470589,
+  "gap": 0.2809930423782417
+ },
+ {
+  "stat": "two point",
+  "league": "wnba",
+  "name": "Le\u00efla Lacan",
+  "fiba_name": "Leila Lacan",
+  "team": "Connecticut Sun",
+  "nation": "France",
+  "club_made": 188.0,
+  "club_att": 360.0,
+  "club_rate": 0.5222222222222223,
+  "fiba_made": 23.0,
+  "fiba_att": 38.0,
+  "fiba_rate": 0.6052631578947368,
+  "gap": 0.08304093567251458
+ },
+ {
+  "stat": "two point",
+  "league": "wnba",
   "name": "Marine Johannes",
   "fiba_name": "Marine Johannes",
   "team": "New York Liberty",
@@ -1506,13 +1596,13 @@
   "fiba_name": "Temi Fagbenle",
   "team": "Toronto Tempo",
   "nation": "GreatBritain",
-  "club_made": 52.0,
-  "club_att": 95.0,
-  "club_rate": 0.5473684210526316,
+  "club_made": 170.0,
+  "club_att": 290.0,
+  "club_rate": 0.5862068965517241,
   "fiba_made": 22.0,
   "fiba_att": 36.0,
   "fiba_rate": 0.6111111111111112,
-  "gap": 0.06374269005847955
+  "gap": 0.024904214559387072
  },
  {
   "stat": "two point",
@@ -2068,6 +2158,21 @@
   "fiba_att": 36.0,
   "fiba_rate": 0.5555555555555556,
   "gap": -0.0444444444444444
+ },
+ {
+  "stat": "two point",
+  "league": "wnba",
+  "name": "Sika Kon\u00e9",
+  "fiba_name": "Sika Kone",
+  "team": "Atlanta Dream",
+  "nation": "Mali",
+  "club_made": 27.0,
+  "club_att": 60.0,
+  "club_rate": 0.45,
+  "fiba_made": 36.0,
+  "fiba_att": 66.0,
+  "fiba_rate": 0.5454545454545454,
+  "gap": 0.0954545454545454
  },
  {
   "stat": "two point",
@@ -3542,6 +3647,36 @@
  {
   "stat": "three point",
   "league": "wnba",
+  "name": "Janelle Sala\u00fcn",
+  "fiba_name": "Janelle Salaun",
+  "team": "Golden State Valkyries",
+  "nation": "France",
+  "club_made": 167.0,
+  "club_att": 436.0,
+  "club_rate": 0.3830275229357798,
+  "fiba_made": 19.0,
+  "fiba_att": 44.0,
+  "fiba_rate": 0.4318181818181818,
+  "gap": 0.04879065888240203
+ },
+ {
+  "stat": "three point",
+  "league": "wnba",
+  "name": "Le\u00efla Lacan",
+  "fiba_name": "Leila Lacan",
+  "team": "Connecticut Sun",
+  "nation": "France",
+  "club_made": 48.0,
+  "club_att": 170.0,
+  "club_rate": 0.2823529411764706,
+  "fiba_made": 8.0,
+  "fiba_att": 22.0,
+  "fiba_rate": 0.36363636363636365,
+  "gap": 0.08128342245989306
+ },
+ {
+  "stat": "three point",
+  "league": "wnba",
   "name": "Marine Johannes",
   "fiba_name": "Marine Johannes",
   "team": "New York Liberty",
@@ -3673,6 +3808,21 @@
   "fiba_att": 20.0,
   "fiba_rate": 0.35,
   "gap": 0.1775862068965517
+ },
+ {
+  "stat": "three point",
+  "league": "wnba",
+  "name": "Temi Fagbenle",
+  "fiba_name": "Temi Fagbenle",
+  "team": "Toronto Tempo",
+  "nation": "GreatBritain",
+  "club_made": 25.0,
+  "club_att": 101.0,
+  "club_rate": 0.24752475247524752,
+  "fiba_made": 4.0,
+  "fiba_att": 11.0,
+  "fiba_rate": 0.36363636363636365,
+  "gap": 0.11611161116111612
  },
  {
   "stat": "three point",
@@ -4168,6 +4318,21 @@
   "fiba_att": 14.0,
   "fiba_rate": 0.2857142857142857,
   "gap": -0.0850722311396469
+ },
+ {
+  "stat": "three point",
+  "league": "wnba",
+  "name": "Dorka Juh\u00e1sz",
+  "fiba_name": "Dorka Juhasz",
+  "team": "Minnesota Lynx",
+  "nation": "Hungary",
+  "club_made": 15.0,
+  "club_att": 52.0,
+  "club_rate": 0.28846153846153844,
+  "fiba_made": 9.0,
+  "fiba_att": 33.0,
+  "fiba_rate": 0.2727272727272727,
+  "gap": -0.01573426573426573
  },
  {
   "stat": "three point",

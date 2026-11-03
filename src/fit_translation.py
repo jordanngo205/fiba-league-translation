@@ -18,7 +18,7 @@ Free throws are the placebo. Same rim, same distance, nobody guarding: the gap
 should be near zero. If it is not, the model is measuring something other than
 league difficulty and no other coefficient should be believed.
 """
-import json, math, re
+import json, math, re, unicodedata
 from collections import defaultdict
 import sys
 from pathlib import Path
@@ -56,7 +56,17 @@ def ca_club(c, att):
 
 
 def norm(n):
-    return re.sub(r'[^a-z]', '', (n or '').lower())
+    """Normalised join key for a player name.
+
+    Accents are folded to their base letter rather than deleted. Stripping
+    non-ASCII outright maps "Dugalic" to dugalic but "Dugalic" with its acute
+    accent to dugali, so the two spellings of one player never meet. FIBA
+    records carry no diacritics while club records do, so every accented club
+    name was failing to match in silence -- folding recovers seven of them.
+    """
+    s = unicodedata.normalize('NFKD', n or '')
+    s = ''.join(c for c in s if not unicodedata.combining(c))
+    return re.sub(r'[^a-z]', '', s.lower())
 
 
 def pooled(rows, made, att):
