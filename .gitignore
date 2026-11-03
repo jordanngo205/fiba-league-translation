@@ -2,6 +2,7 @@
 .env
 .synergy_token
 .synergy_token.tmp
+.synergy_token.lock
 *.bak
 
 # Raw scraped Synergy data. Synergy Sports data is licensed; this repo is

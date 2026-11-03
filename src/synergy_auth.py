@@ -93,6 +93,38 @@ def seconds_left(tok=None):
     return tok['obtained_at'] + tok.get('expires_in', 3600) - time.time()
 
 
+class _RotationLock:
+    """Exclusive lock around a refresh.
+
+    Rotation is read-modify-write on a shared file: two processes refreshing at
+    once both read the same token, both send it, and the loser is left holding
+    one the server has already retired. Serialising the refresh is what makes a
+    shared token file safe to share.
+    """
+
+    def __init__(self, path):
+        self.path = Path(str(path) + '.lock')
+        self.fh = None
+
+    def __enter__(self):
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.fh = open(self.path, 'w')
+        try:
+            import fcntl
+            fcntl.flock(self.fh, fcntl.LOCK_EX)
+        except (ImportError, OSError):
+            pass        # best effort: a missing lock must not block the scrape
+        return self
+
+    def __exit__(self, *exc):
+        try:
+            import fcntl
+            fcntl.flock(self.fh, fcntl.LOCK_UN)
+        except (ImportError, OSError):
+            pass
+        self.fh.close()
+
+
 def renew(verbose=True):
     """Swap the refresh token for a new access token. No credentials sent.
 
@@ -102,9 +134,20 @@ def renew(verbose=True):
     It also means two scrapers must not run against this token file at the same
     time; each refresh would invalidate the other's token.
     """
+    with _RotationLock(TOKEN_FILE):
+        return _renew_locked(verbose)
+
+
+def _renew_locked(verbose):
+    # Re-read inside the lock: another process may have refreshed while this
+    # one waited, in which case its token is already good and no call is needed.
     tok = load()
     if not tok.get('refresh_token'):
         return None
+    if seconds_left(tok) > _MIN_MARGIN:
+        if verbose:
+            print('   [another process already refreshed; reusing]', flush=True)
+        return tok
     r = requests.post(
         f'{AUTH_BASE}/connect/token',
         headers={'Content-Type': 'application/x-www-form-urlencoded',
