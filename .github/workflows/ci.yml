@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Byte-compile every module
+        # Catches syntax errors in the scrapers, which CI cannot run: they need
+        # credentials and would hit the Synergy API.
+        run: python -m compileall -q src tests
+
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Rebuild the dashboard from committed results
+        # The raw scrapes are gitignored because the data is licensed, but the
+        # fitted results are tracked, so the page must still build from them.
+        # This is what stops the committed docs/index.html drifting from the
+        # generator that is supposed to produce it.
+        run: python src/build_dashboard.py
+
+      - name: Fail if the committed dashboard is stale
+        run: |
+          if ! git diff --quiet -- docs/index.html; then
+            echo "::error::docs/index.html differs from a fresh build."
+            echo "Run 'make dash' and commit the result."
+            git diff --stat -- docs/index.html
+            exit 1
+          fi
+          echo "dashboard is in sync with its inputs"
